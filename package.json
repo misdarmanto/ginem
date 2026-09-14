@@ -1,0 +1,72 @@
+{
+  "name": "ginem",
+  "version": "1.0.0",
+  "description": "Modern monorepo with API backend and React dashboard - Single command development and deployment",
+  "private": false,
+  "license": "MIT",
+  "author": {
+    "name": "Misdar Manto",
+    "email": "misdarmnto@gmail.com",
+    "url": "https://github.com/yourusername"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/ginem.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/ginem/issues"
+  },
+  "homepage": "https://github.com/yourusername/ginem#readme",
+  "keywords": [
+    "monorepo",
+    "express",
+    "react",
+    "vite",
+    "typescript",
+    "nodejs",
+    "dashboard",
+    "api",
+    "fullstack"
+  ],
+  "workspaces": [
+    "packages/api",
+    "packages/dashboard"
+  ],
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "scripts": {
+    "dev": "bash ./scripts/dev-startup.sh && concurrently --names \"API,DASHBOARD\" --prefix \"[{name}]\" --prefix-colors \"blue,cyan\" \"npm run dev:api\" \"npm run dev:dashboard\"",
+    "dev:api": "npm run dev -w packages/api",
+    "dev:dashboard": "npm run dev -w packages/dashboard",
+    "build": "npm run build --workspaces",
+    "build:api": "npm run build -w packages/api",
+    "build:dashboard": "npm run build -w packages/dashboard",
+    "start": "npm run start -w packages/api",
+    "lint": "npm run lint --workspaces",
+    "lint:fix": "npm run lint:fix --workspaces",
+    "test": "npm run test --workspaces",
+    "test:watch": "npm run test:watch --workspaces",
+    "test:coverage": "npm run test:coverage --workspaces",
+    "migrate:up": "npm run migrate:up -w packages/api",
+    "migrate:undo": "npm run migrate:undo -w packages/api",
+    "seed": "npm run seed -w packages/api",
+    "evaluate": "npm run evaluate -w packages/api",
+    "clean": "rm -rf packages/*/node_modules packages/*/.next packages/*/dist packages/*/build && npm install",
+    "install:all": "npm install"
+  },
+  "keywords": [
+    "monorepo",
+    "express",
+    "react",
+    "vite"
+  ],
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/yourusername/ginem"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.5"
+  }
+}
