@@ -28,7 +28,9 @@
       "Bash(rm -rf .git)",
       "Bash(git config *)",
       "Bash(echo \"🚀 PROPER GIT MERGE FROM GITHUB - DENGAN SEMUA COMMIT HISTORY\" && echo \"\" && echo \"Status: Remove old git...\" && rm -rf .git && echo \"✅ Removed\" && echo \"\" && echo \"Status: Init fresh git...\" && git init && git config user.email \"misdarmanto1922@gmail.com\" && git config user.name \"Misdar Manto\" && echo \"✅ Initialized\" && echo \"\" && echo \"Status: Add GitHub remotes \\(READ-ONLY\\)...\" && git remote add api-github https://github.com/TUGAS-AKHIR-TERCINTA/ginem-api.git && git remote add dashboard-github https://github.com/TUGAS-AKHIR-TERCINTA/ginem-dashboard.git && echo \"✅ Remotes added\" && echo \"\" && echo \"Status: Fetch API history from GitHub...\" && git fetch api-github master && echo \"✅ API fetched\" && git log api-github/master --oneline | wc -l && echo \"commits dari API\" && echo \"\" && echo \"Status: Fetch Dashboard history from GitHub...\" && git fetch dashboard-github master && echo \"✅ Dashboard fetched\" && git log dashboard-github/master --oneline | wc -l && echo \"commits dari Dashboard\")",
-      "Bash(bash /tmp/reorganize.sh)"
+      "Bash(bash /tmp/reorganize.sh)",
+      "Bash(awk '{print $NF}')",
+      "Bash(echo \"🗑️ Removing unnecessary files...\" && rm -f vite.config.ts.timestamp-*.mjs .env.example debug.sh GITHUB_SETUP_GUIDE.md MONOREPO_SETUP.md PROFESSIONAL_OPENSOURCE_SETUP.md SINGLE_COMMAND_SETUP.md STRUCTURE.md && echo \"✅ Files removed:\" && echo \"  - vite.config.ts.timestamp file\" && echo \"  - .env.example\" && echo \"  - debug.sh\" && echo \"  - GITHUB_SETUP_GUIDE.md\" && echo \"  - MONOREPO_SETUP.md\" && echo \"  - PROFESSIONAL_OPENSOURCE_SETUP.md\" && echo \"  - SINGLE_COMMAND_SETUP.md\" && echo \"  - STRUCTURE.md\" && echo \"\" && echo \"📋 Remaining root files:\" && ls -1 | grep \"^[A-Z\\\\.]\" | sort)"
     ]
   }
 }
