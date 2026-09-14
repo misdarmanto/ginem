@@ -1,308 +1,232 @@
-# 🚀 Ginem
+# Ginem API
 
-[![CI - Tests & Lint](https://github.com/yourusername/ginem/actions/workflows/ci.yml/badge.svg)](https://github.com/yourusername/ginem/actions)
-[![Deploy](https://github.com/yourusername/ginem/actions/workflows/deploy.yml/badge.svg)](https://github.com/yourusername/ginem/actions)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-green)](https://nodejs.org/)
-[![npm](https://img.shields.io/badge/npm-%3E%3D9.0.0-green)](https://www.npmjs.com/)
+Backend REST API for the **Ginem** Smart Home IoT platform — natural language device control, AI Agent, MQTT, scheduler, WhatsApp, and RAG.
 
-Modern monorepo with **single command development**, **unified deployment**, and **professional structure**. Built with Express, React, Vite, and TypeScript.
+Part of the [Ginem organization](https://github.com/YOUR-ORG). See the [org profile README](https://github.com/YOUR-ORG/.github/blob/main/profile/README.md) for full-stack overview.
 
-[**🌐 Website**](#) • [**📚 Documentation**](#) • [**🐛 Report Bug**](https://github.com/yourusername/ginem/issues) • [**✨ Request Feature**](https://github.com/yourusername/ginem/issues)
+**Stack:** TypeScript · Express · MySQL · Redis · BullMQ · RabbitMQ · HiveMQ Cloud · OpenAI · Pinecone
 
 ---
 
-## 📋 Features
+## Prerequisites
 
-- ✨ **Single Command Development** - `npm run dev` runs API + Dashboard
-- 🏗️ **Professional Monorepo** - npm workspaces with organized structure
-- 🚀 **Easy Deployment** - Single repository, single deploy command
-- 🐳 **Docker Support** - Docker Compose for development and production
-- 🔄 **CI/CD Ready** - GitHub Actions workflows included
-- 📦 **Workspace Management** - Independent packages with shared deps
-- 🎨 **Modern Tech Stack** - Express, React, Vite, TypeScript
-- 📖 **Well Documented** - Comprehensive guides and examples
+| Requirement | Version |
+|-------------|---------|
+| Node.js | 20+ |
+| npm | 9+ |
+| MySQL | 8 (local or Docker) |
+| Redis | 7 (local or Docker) |
+| RabbitMQ | 3.x |
+| HiveMQ Cloud | MQTT broker (external) |
+| OpenAI API key | LLM + optional TTS |
+| Pinecone API key | Optional (RAG) |
 
 ---
 
-## 🚀 Quick Start
-
-### Prerequisites
-- Node.js 18+
-- npm 9+
-
-### Installation
+## Quick Start (Local)
 
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/ginem.git
-cd ginem
-
-# Install dependencies
+# 1. Install dependencies
 npm install
 
-# Start development
+# 2. Configure environment
+cp .env.example .env
+# Edit .env — fill DB, Redis, RabbitMQ, HiveMQ, OpenAI, Pinecone credentials
+
+# 3. Run migrations
+npm run migrate:up
+
+# 4. Start dev server (hot reload)
 npm run dev
 ```
 
-**That's it!** 🎉 Open your browser:
-- 🔵 **Frontend**: http://localhost:5173
-- 🔵 **Backend**: http://localhost:3000
+| Service | URL |
+|---------|-----|
+| API | http://localhost:8000 |
+| Swagger | http://localhost:8000/api/v1/docs |
 
 ---
 
-Monorepo yang mengatur API backend dan Dashboard frontend dalam satu repository menggunakan npm workspaces.
+## Docker
 
-## 📁 Struktur Project
+Docker Compose runs **MySQL**, **Redis**, **RabbitMQ**, and the **app**. MQTT uses **HiveMQ Cloud** from `.env` (not containerized).
 
-```
-ginem-dev-monorepo/
-├── packages/
-│   ├── api/              # Backend API (Express + TypeScript)
-│   └── dashboard/        # Frontend Dashboard (React + Vite)
-├── package.json          # Root workspace configuration
-└── README.md            # File ini
-```
-
-## 🚀 Quick Start
-
-### Install Dependencies
 ```bash
-npm install
+cp .env.docker.example .env
+docker compose up -d --build
 ```
 
-### Development Mode (Run Both API & Dashboard)
+**Development (hot reload):**
+
 ```bash
-npm run dev
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 ```
 
-**That's it!** Kedua aplikasi akan berjalan di satu command:
-- 🔵 **Backend API**: http://localhost:3000
-- 🔵 **Frontend Dashboard**: http://localhost:5173
+| Service | Container | Port |
+|---------|-----------|------|
+| App | `ta-backend` | 8000 |
+| MySQL | `ta-mysql` | 3306 |
+| Redis | `ta-redis` | 6379 |
+| RabbitMQ | `ta-rabbitmq` | 5672 (AMQP), 15672 (management UI) |
+
+> Set `DB_HOST=mysql`, `REDIS_HOST=redis`, and `RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672` inside Docker.  
+> Set `RUN_MIGRATIONS=true` to auto-run migrations on startup.
 
 ---
 
-**Atau jalankan secara terpisah** (jika hanya ingin test satu saja):
-```bash
-npm run dev:api       # Hanya Backend (port 3000)
-npm run dev:dashboard # Hanya Frontend (port 5173)
-```
+## Chat message broker (RabbitMQ)
 
-### Build untuk Production
-```bash
-npm run build
-```
+Inbound chat from **web** (`POST /api/v1/chat`) and **WhatsApp** is published to the durable queue `chat.llm.requests` before `ChatService` / LLM processing. Callers wait for a reply via RabbitMQ RPC (`correlationId` + exclusive reply queue).
 
-Atau build individual:
-```bash
-npm run build:api
-npm run build:dashboard
-```
-
-### Testing
-```bash
-npm test              # Run tests semua packages
-npm run test:watch   # Watch mode
-npm run test:coverage # Coverage report
-```
-
-### Linting & Formatting
-```bash
-npm run lint          # Check linting
-npm run lint:fix      # Fix linting issues
-```
-
-## 📦 Scripts yang Tersedia
-
-### Development
-- `npm run dev` - Run API & Dashboard secara parallel
-- `npm run dev:api` - Run API saja
-- `npm run dev:dashboard` - Run Dashboard saja
-
-### Build & Production
-- `npm run build` - Build semua packages
-- `npm run build:api` - Build API
-- `npm run build:dashboard` - Build Dashboard
-- `npm run start` - Start production server (API)
-
-### Database (API)
-- `npm run migrate:up` - Jalankan migration
-- `npm run migrate:undo` - Undo migration terakhir
-- `npm run seed` - Seed database
-
-### Testing & Quality
-- `npm run test` - Run tests
-- `npm run test:watch` - Watch mode
-- `npm run test:coverage` - Coverage report
-- `npm run lint` - Check linting
-- `npm run lint:fix` - Fix linting
-
-### Utilities
-- `npm run clean` - Clean node_modules & rebuild
-- `npm run evaluate` - Run API evaluation
-
-## 📝 Struktur Packages
-
-### [packages/api](packages/api)
-Backend API dengan Express dan TypeScript
-- **Port**: 3000 (atau sesuai .env)
-- **Scripts**: 
-  - `npm run dev` - Development server dengan hot reload
-  - `npm run build` - Compile TypeScript
-  - `npm run start` - Jalankan production build
-  - `npm run test` - Run Jest tests
-
-### [packages/dashboard](packages/dashboard)
-Frontend Dashboard dengan React, Vite, dan TypeScript
-- **Port**: 5173 (Vite default)
-- **Scripts**:
-  - `npm run dev` - Development server
-  - `npm run build` - Build untuk production
-  - `npm run preview` - Preview build lokal
-  - `npm run test` - Run Vitest
-
-## 🌍 Environment Variables
-
-### API (.env di packages/api/)
-```
-NODE_ENV=development
-PORT=3000
-DATABASE_URL=mysql://user:password@localhost:3306/dbname
-REDIS_URL=redis://localhost:6379
-# ... other env vars
-```
-
-### Dashboard (.env di packages/dashboard/)
-```
-VITE_API_URL=http://localhost:3000/api
-# ... other env vars
-```
-
-## 🐳 Docker Deployment
-
-Untuk deployment, build kedua packages dan deploy sebagai satu unit:
-
-```bash
-# Build semua
-npm run build
-
-# Output tersedia di:
-# - packages/api/build/
-# - packages/dashboard/dist/
-```
-
-## 📚 Useful Commands
-
-### Menjalankan command di package spesifik
-```bash
-npm run <script> -w packages/api
-npm run <script> -w packages/dashboard
-```
-
-### Install package ke workspace spesifik
-```bash
-npm install <package-name> -w packages/api
-npm install <package-name> -D -w packages/dashboard
-```
-
-### Uninstall package dari workspace
-```bash
-npm uninstall <package-name> -w packages/api
-```
-
-## 🔗 Workflow Development
-
-1. **Setup awal**
-   ```bash
-   npm install
-   ```
-
-2. **Development**
-   ```bash
-   npm run dev
-   ```
-   - Buka http://localhost:5173 untuk Dashboard
-   - API running di http://localhost:3000
-
-3. **Make changes**
-   - Frontend: Edit files di `packages/dashboard/src`
-   - Backend: Edit files di `packages/api/src`
-
-4. **Testing**
-   ```bash
-   npm test
-   ```
-
-5. **Build & Deploy**
-   ```bash
-   npm run build
-   # Deploy kedua packages
-   ```
-
-## 🚢 Production Deployment
-
-Keuntungan monorepo:
-- ✅ Single repository untuk version control
-- ✅ Single deploy command
-- ✅ Shared dependencies di root node_modules
-- ✅ Synchronized releases
-- ✅ Atomic commits dengan API + Dashboard changes
-
-Langkah deployment:
-1. Build: `npm run build`
-2. Push build artifacts ke server
-3. Run API: `cd packages/api && npm run start`
-4. Serve Dashboard: `cd packages/dashboard && serve dist/`
-
-## 💡 Tips
-
-- Gunakan `npm run dev` untuk development kedua aplikasi sekaligus
-- Setiap package masih punya scripts independennya
-- Root `package.json` adalah koordinator central
-- Dependencies tetap di masing-masing package untuk isolation
-
-## 📖 Package-Specific Documentation
-
-- [API README](packages/api/README.md)
-- [Dashboard Documentation](packages/dashboard/STRUCTURE.md)
-
-## ❓ Troubleshooting
-
-### npm install error
-```bash
-npm run clean
-npm install
-```
-
-### Port sudah terpakai
-- Ubah port di package config masing-masing
-- Atau cek proses yang pakai port dengan `lsof -i :3000` atau `lsof -i :5173`
-
-### Workspace not found
-- Pastikan struktur folder sudah benar: `packages/api` dan `packages/dashboard`
-- Run `npm install` ulang
+| Variable | Description |
+|----------|-------------|
+| `RABBITMQ_URL` | AMQP URL (default `amqp://guest:guest@127.0.0.1:5672`) |
+| `RABBITMQ_CHAT_QUEUE` | Queue name (default `chat.llm.requests`) |
+| `RABBITMQ_CHAT_REPLY_TIMEOUT_MS` | RPC timeout (default `120000`) |
 
 ---
 
-## 🤝 Contributing
+## Environment Variables
 
-We love your input! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details on:
-- How to submit issues and feature requests
-- Development setup
-- Pull request process
-- Code of conduct
+Copy `.env.example` (local) or `.env.docker.example` (Docker) to `.env`.
 
-## 📄 License
+| Variable | Description |
+|----------|-------------|
+| `APP_PORT` | HTTP port (default `8000`) |
+| `JWT_TOKEN` | JWT signing secret |
+| `PASSWORD_ENCRYPTION` | Password hash salt |
+| `CORS_ORIGIN` | Frontend URL (e.g. `http://localhost:5173`) |
+| `DB_HOST` / `DB_PORT` | MySQL host & port |
+| `DB_NAME` / `DB_USER_NAME` / `DB_PASSWORD` | MySQL credentials |
+| `RABBITMQ_URL` | RabbitMQ connection URL (chat → LLM broker) |
+| `RABBITMQ_CHAT_QUEUE` | Chat request queue name |
+| `RABBITMQ_CHAT_REPLY_TIMEOUT_MS` | Max wait for LLM reply over RabbitMQ |
+| `REDIS_HOST` / `REDIS_PORT` | Redis connection |
+| `OPENAI_API_KEY` | OpenAI (LLM + TTS) |
+| `PINECONE_API_KEY` | Pinecone vector DB |
+| `PINECONE_INDEX_NAME` / `PINECONE_NAMESPACE` | Pinecone config |
+| `MQTT_BROKER_URL` | HiveMQ Cloud URL (`mqtts://...:8883`) |
+| `MQTT_USERNAME` / `MQTT_PASSWORD` | HiveMQ credentials |
+| `RUN_MIGRATIONS` | Auto-migrate on Docker start (`true`/`false`) |
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- Thanks to all [contributors](https://github.com/yourusername/ginem/graphs/contributors)
-- Built with [Express](https://expressjs.com/), [React](https://react.dev/), [Vite](https://vitejs.dev/)
+Never commit `.env` to version control.
 
 ---
 
-Created with ❤️ for Ginem Dev
+## MQTT Topics
 
-**[⬆ back to top](#-ginem)**
+```text
+iot/v1/device/{deviceId}/command
+iot/v1/device/{deviceId}/state
+iot/v1/device/{deviceId}/telemetry
+```
+
+`{deviceId}` is the numeric ID from the `devices` table. Command/telemetry payloads use `{ "value": "..." }`.
+
+---
+
+## API Overview
+
+Base URL: `/api/v1`
+
+| Route | Description |
+|-------|-------------|
+| `/auth` | Login, register, reset password |
+| `/chat` | AI agent query (+ optional TTS) |
+| `/devices` | Device CRUD |
+| `/devices/logs` | Sensor & telemetry logs |
+| `/mqtt` | MQTT publish & status |
+| `/whatsapp` | WhatsApp session management |
+| `/indexing` | Pinecone text indexing |
+| `/scheduler-logs` | Scheduled job history |
+| `/stats` | System aggregate counts |
+| `/admins` | Admin management |
+| `/settings` | LLM model settings |
+| `/docs` | Swagger UI |
+
+Most routes require a **Bearer JWT** from `POST /api/v1/auth/login`.
+
+---
+
+## NPM Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Dev server with hot reload |
+| `npm run build` | Compile TypeScript → `build/` |
+| `npm start` | Build + run production server |
+| `npm run migrate:up` | Run database migrations |
+| `npm run migrate:undo` | Rollback last migration |
+| `npm run seed` | Run database seeders |
+| `npm run lint` | Run ESLint |
+| `npm run lint:fix` | ESLint with auto-fix |
+| `npm test` | Run unit tests |
+| `npm run test:coverage` | Tests with coverage report |
+
+---
+
+## Project Structure
+
+```text
+ginem-api/
+├── server.ts
+├── src/
+│   ├── configs/
+│   ├── controllers/
+│   ├── middlewares/
+│   ├── models/
+│   ├── routes/
+│   ├── schemas/
+│   ├── services/
+│   │   ├── admin/
+│   │   ├── appLog/
+│   │   ├── auth/
+│   │   ├── chat/
+│   │   ├── device/
+│   │   ├── llm/
+│   │   ├── mcp/
+│   │   ├── mqtt/
+│   │   ├── profile/
+│   │   ├── rabbitmq/
+│   │   ├── rag/
+│   │   ├── scheduler/
+│   │   ├── stats/
+│   │   └── whatsapp/
+│   └── utilities/
+├── resources/
+│   ├── migrations/
+│   └── seeders/
+├── docker-compose.yml
+├── Dockerfile
+└── .env.example
+```
+
+---
+
+## Testing & CI
+
+```bash
+npm test              # 169+ unit tests
+npm run lint          # ESLint check
+```
+
+GitHub Actions runs **lint + tests** on every push and pull request.
+
+---
+
+## Related Repositories
+
+| Repo | Role |
+|------|------|
+| [ginem-admin](https://github.com/YOUR-ORG/ginem-admin) | Admin dashboard & web chat |
+| [ginem-hardware](https://github.com/YOUR-ORG/ginem-hardware) | ESP32 firmware |
+| [.github](https://github.com/YOUR-ORG/.github) | Organization profile |
+
+---
+
+## Production Notes
+
+- Use `npm run build && node build/server.js` or the production Docker image.
+- MQTT must point to **HiveMQ Cloud** (`mqtts://`) — not a local broker.
+- WhatsApp uses Baileys (unofficial); use an official API for production messaging.
+- Set `CORS_ORIGIN` to your deployed `ginem-admin` URL.

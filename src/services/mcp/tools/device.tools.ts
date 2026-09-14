@@ -1,0 +1,55 @@
+import { listDevicesTool, getDeviceByIdTool } from './device/deviceQuery.tools'
+import {
+  getLastLogByDeviceNameTool,
+  getLast10LogsByDeviceNameTool,
+  createDeviceLogByDeviceNameTool
+} from './device/deviceLogs.tools'
+import {
+  setActuatorStateByDeviceNameTool,
+  scheduleActuatorStateAtDatetimeTool,
+  scheduleSensorDataAtDatetimeTool,
+  getScheduledJobResultTool,
+  listScheduledJobsTool
+} from './device/deviceActuatorScheduler.tools'
+import {
+  createAutomationRuleTool,
+  listAutomationRulesTool,
+  getAutomationRuleTool,
+  setAutomationRuleActiveTool,
+  deleteAutomationRuleTool,
+  ruleTools
+} from './device/deviceRule.tools'
+
+/** All device MCP tools (for agent binding). */
+export const deviceTools = [
+  listDevicesTool,
+  getDeviceByIdTool,
+  getLastLogByDeviceNameTool,
+  getLast10LogsByDeviceNameTool,
+  createDeviceLogByDeviceNameTool,
+  setActuatorStateByDeviceNameTool,
+  scheduleActuatorStateAtDatetimeTool,
+  scheduleSensorDataAtDatetimeTool,
+  getScheduledJobResultTool,
+  listScheduledJobsTool,
+  ...ruleTools
+]
+
+export {
+  listDevicesTool,
+  getDeviceByIdTool,
+  getLastLogByDeviceNameTool,
+  getLast10LogsByDeviceNameTool,
+  createDeviceLogByDeviceNameTool,
+  setActuatorStateByDeviceNameTool,
+  scheduleActuatorStateAtDatetimeTool,
+  scheduleSensorDataAtDatetimeTool,
+  getScheduledJobResultTool,
+  listScheduledJobsTool,
+  createAutomationRuleTool,
+  listAutomationRulesTool,
+  getAutomationRuleTool,
+  setAutomationRuleActiveTool,
+  deleteAutomationRuleTool,
+  ruleTools
+}

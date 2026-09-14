@@ -1,0 +1,36 @@
+{
+  "mode": "llm-eval",
+  "datasetPath": "./evaluation/datasets/5_dataset.json",
+  "totalCases": 5,
+  "categories": "all",
+  "repetitions": 1,
+  "concurrency": 1,
+  "maxRetries": 2,
+  "models": [
+    {
+      "key": "openai:gpt-5.6-luna",
+      "displayName": "GPT-5.6 Luna",
+      "provider": "openai",
+      "apiModel": "gpt-5.6-luna",
+      "temperature": "provider default (not overridden)",
+      "maxTokens": 1024
+    },
+    {
+      "key": "anthropic:claude-sonnet-5",
+      "displayName": "Claude Sonnet 5",
+      "provider": "anthropic",
+      "apiModel": "claude-sonnet-5",
+      "temperature": "provider default (not overridden)",
+      "maxTokens": 1024
+    },
+    {
+      "key": "deepseek:deepseek-v4-flash",
+      "displayName": "DeepSeek-V4-Flash",
+      "provider": "deepseek",
+      "apiModel": "deepseek-v4-flash",
+      "temperature": "provider default (not overridden)",
+      "maxTokens": 1024
+    }
+  ],
+  "generatedAt": "2026-09-06T10:23:22.102Z"
+}

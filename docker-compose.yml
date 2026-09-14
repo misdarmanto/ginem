@@ -1,96 +1,109 @@
-version: '3.8'
-
 services:
-  # MySQL Database
-  db:
-    image: mysql:8
-    container_name: ginem-db
+  mysql:
+    image: mysql:8.0
+    container_name: ta-mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: ginem_dev
-      MYSQL_USER: ginem
-      MYSQL_PASSWORD: ginem123
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
+      MYSQL_DATABASE: ${DB_NAME:-ta_project}
+      TZ: Asia/Jakarta
     ports:
-      - "3306:3306"
+      - '${DB_PORT:-3306}:3306'
     volumes:
-      - db_data:/var/lib/mysql
-    networks:
-      - ginem-network
+      - mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test:
+        [
+          'CMD',
+          'mysqladmin',
+          'ping',
+          '-h',
+          '127.0.0.1',
+          '-uroot',
+          '-p${DB_PASSWORD:-root}'
+        ]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 30s
+    networks:
+      - ta-network
 
-  # Redis Cache/Queue
   redis:
     image: redis:7-alpine
-    container_name: ginem-redis
+    container_name: ta-redis
     restart: unless-stopped
+    command: ['redis-server', '--appendonly', 'yes']
     ports:
-      - "6379:6379"
+      - '${REDIS_PORT:-6379}:6379'
     volumes:
       - redis_data:/data
-    networks:
-      - ginem-network
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+    networks:
+      - ta-network
 
-  # Backend API
-  api:
-    build:
-      context: .
-      dockerfile: packages/api/Dockerfile
-    container_name: ginem-api
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: ta-rabbitmq
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - '${RABBITMQ_PORT:-5672}:5672'
+      - '${RABBITMQ_MANAGEMENT_PORT:-15672}:15672'
     environment:
-      NODE_ENV: development
-      PORT: 3000
-      DATABASE_URL: mysql://ginem:ginem123@db:3306/ginem_dev
-      REDIS_URL: redis://redis:6379
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ['CMD', 'rabbitmq-diagnostics', '-q', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      - ta-network
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ta-backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672
+      RUN_MIGRATIONS: ${RUN_MIGRATIONS:-true}
+    ports:
+      - '${APP_PORT:-8000}:8000'
+    volumes:
+      - ./logs:/app/logs
+      - ./settings:/app/settings
+      - whatsapp_sessions:/resources/whatsapp/sessions
     depends_on:
-      db:
+      mysql:
         condition: service_healthy
       redis:
         condition: service_healthy
-    volumes:
-      - ./packages/api:/app
-      - /app/node_modules
+      rabbitmq:
+        condition: service_healthy
     networks:
-      - ginem-network
-    command: npm run dev
-
-  # Frontend Dashboard
-  dashboard:
-    build:
-      context: .
-      dockerfile: packages/dashboard/Dockerfile
-    container_name: ginem-dashboard
-    restart: unless-stopped
-    ports:
-      - "5173:5173"
-    environment:
-      NODE_ENV: development
-      VITE_API_URL: http://api:3000
-    depends_on:
-      - api
-    volumes:
-      - ./packages/dashboard:/app
-      - /app/node_modules
-    networks:
-      - ginem-network
-    command: npm run dev
-
-networks:
-  ginem-network:
-    driver: bridge
+      - ta-network
 
 volumes:
-  db_data:
+  mysql_data:
   redis_data:
+  rabbitmq_data:
+  whatsapp_sessions:
+
+networks:
+  ta-network:
+    driver: bridge

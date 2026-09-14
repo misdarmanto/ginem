@@ -1,0 +1,74 @@
+import { DeviceLogService, DeviceService } from '../device'
+import { MQTTService } from './MQTT.service'
+import logger from '../../utilities/logger'
+import { AppError } from '../../utilities/AppError'
+import { RuleEngine } from '../rule'
+import { parseTelemetryMetrics } from '../rule/telemetryMetrics'
+
+function extractValueAsString(payload: unknown): string | null {
+  if (payload != null && typeof payload === 'object' && 'value' in payload) {
+    const raw = (payload as { value: unknown }).value
+    if (raw === undefined || raw === null) {
+      return null
+    }
+    return String(raw)
+  }
+  return null
+}
+
+export class TelemetryService {
+  static initialize() {
+    MQTTService.onDeviceTelemetry(async (deviceId: number, payload: unknown) => {
+      try {
+        logger.info(`[TelemetryService] telemetry received device=${deviceId}`, {
+          payload
+        })
+
+        const deviceExists = await DeviceService.exists(deviceId)
+        if (!deviceExists) {
+          logger.warn(
+            `[TelemetryService] Device ${deviceId} not found, ignoring telemetry`
+          )
+          return
+        }
+
+        const deviceLogData = extractValueAsString(payload)
+
+        if (deviceLogData == null) {
+          logger.warn(
+            `[TelemetryService] Missing or invalid "value" in telemetry payload for device ${deviceId}`
+          )
+          return
+        }
+
+        await DeviceLogService.create({
+          deviceLogDeviceId: deviceId,
+          deviceLogData
+        })
+
+        // Fire-and-forget Rule Engine — never fail telemetry ingest on rule errors.
+        const metrics = parseTelemetryMetrics(payload)
+        if (Object.keys(metrics).length > 0) {
+          void RuleEngine.evaluate({
+            deviceId,
+            metrics,
+            receivedAt: new Date(),
+            rawPayload: payload
+          }).catch((ruleError) => {
+            logger.error(
+              `[TelemetryService] RuleEngine.evaluate failed device=${deviceId}: ${String(ruleError)}`
+            )
+          })
+        }
+      } catch (serviceError) {
+        if (serviceError instanceof AppError) {
+          logger.warn(
+            `[TelemetryService] operational error for device ${deviceId}: ${serviceError.message}`
+          )
+          return
+        }
+        logger.error(`[TelemetryService] create failed: ${String(serviceError)}`)
+      }
+    })
+  }
+}

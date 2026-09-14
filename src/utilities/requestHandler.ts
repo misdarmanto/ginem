@@ -1,0 +1,42 @@
+import { StatusCodes } from 'http-status-codes'
+import { type Response } from 'express'
+import { ResponseData } from './response'
+import logger from './logger'
+import { AppError } from './AppError'
+import { AppLogService } from '../services/appLog'
+
+export function handleServerError (res: Response, err: unknown) {
+  if (err instanceof Error) {
+    const message = `Unable to process request!: ${err.message}`
+    logger.error(message, { stack: err.stack })
+    void AppLogService.create({
+      appLogLevel: 'error',
+      appLogMessage: message,
+      appLogSource: 'handleServerError',
+      appLogMeta: err.stack ?? null
+    })
+    const response = ResponseData.error({
+      message: 'Unable to process request! Error code 1T33'
+    })
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(response)
+  }
+
+  const message = 'Unable to process request! Unknown error'
+  logger.error(message)
+  void AppLogService.create({
+    appLogLevel: 'error',
+    appLogMessage: message,
+    appLogSource: 'handleServerError',
+    appLogMeta: null
+  })
+  const response = ResponseData.error({ message: 'Unable to process request!' })
+  return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(response)
+}
+
+export function handleError (res: Response, err: unknown): Response {
+  if (err instanceof AppError) {
+    logger.warn(`[AppError] ${err.statusCode}: ${err.message}`)
+    return res.status(err.statusCode).json(ResponseData.error({ message: err.message }))
+  }
+  return handleServerError(res, err)
+}
