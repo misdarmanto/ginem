@@ -35,7 +35,8 @@
       "Bash(xargs ls -l)",
       "Bash(rm -rf node_modules packages/*/node_modules package-lock.json)",
       "Bash(timeout 10 npm run dev)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(pkill -f \"npm run dev\")"
     ]
   }
 }
