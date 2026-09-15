@@ -5,7 +5,8 @@
   "private": true,
   "workspaces": [
     "packages/api",
-    "packages/dashboard"
+    "packages/dashboard",
+    "packages/mcp-server"
   ],
   "scripts": {
     "dev": "concurrently -n API,DASHBOARD -c blue,green \"npm run dev -w packages/api\" \"npm run dev -w packages/dashboard\"",
