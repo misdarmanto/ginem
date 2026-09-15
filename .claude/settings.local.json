@@ -36,7 +36,32 @@
       "Bash(rm -rf node_modules packages/*/node_modules package-lock.json)",
       "Bash(timeout 10 npm run dev)",
       "Bash(npm run *)",
-      "Bash(pkill -f \"npm run dev\")"
+      "Bash(pkill -f \"npm run dev\")",
+      "Bash(set -e)",
+      "Bash(grep -B5 \"^\\\\.env\\\\.example$\")",
+      "Bash(cp packages/api/.env.example packages/api/.env)",
+      "Bash(cp packages/dashboard/.env.example packages/dashboard/.env)",
+      "Bash(ps -p 25959 -o pid,etime,pcpu,rss,command)",
+      "Bash(npm view *)",
+      "Bash(nvm --version)",
+      "Bash(node -e ' *)",
+      "Bash(pkill -f \"vite\")",
+      "Bash(pkill -f \"tsx watch\")",
+      "Bash(pkill -f \"concurrently\")",
+      "Bash(lsof -ti:5173,8000)",
+      "Bash(xargs kill -9)",
+      "Bash(docker --version)",
+      "Bash(docker info *)",
+      "Bash(brew list *)",
+      "Bash(mysql.server status *)",
+      "Bash(mysql -u root -e \"SELECT 1;\")",
+      "Bash(mysql -u root --password=\"\" -e \"SELECT 1;\")",
+      "Bash(mysql -u root -e \"CREATE DATABASE IF NOT EXISTS ta_project;\")",
+      "Bash(mysql -u root -e \"SHOW DATABASES;\")",
+      "Bash(redis-cli ping *)",
+      "Bash(curl -s -X POST http://localhost:8000/api/v1/auth/register -H \"Content-Type: application/json\" -d '{\"userName\":\"Test User\",\"userEmail\":\"test@example.com\",\"userPassword\":\"password123\"}')",
+      "Bash(grep \"\\\\.env$\")",
+      "Bash(git check-ignore *)"
     ]
   }
 }

@@ -3,7 +3,6 @@ import path from 'path'
 /** Folder induk sesi multi-file Baileys per user (di luar `src/` agar watch tidak restart). */
 export const WHATSAPP_SESSIONS_ROOT = path.join(
   process.cwd(),
-  '..',
   'resources',
   'whatsapp',
   'sessions'

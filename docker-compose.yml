@@ -69,7 +69,7 @@ services:
 
   app:
     build:
-      context: .
+      context: ./packages/api
       dockerfile: Dockerfile
     container_name: ta-backend
     restart: unless-stopped

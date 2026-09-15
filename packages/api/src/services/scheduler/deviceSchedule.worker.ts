@@ -1,4 +1,4 @@
-import { QueueScheduler, Worker, type Job } from 'bullmq'
+import { Worker, type Job } from 'bullmq'
 import logger from '../../utilities/logger'
 import {
   DEVICE_SCHEDULE_QUEUE_NAME,
@@ -7,7 +7,6 @@ import {
 import type { DeviceScheduleJobData } from './deviceSchedule.queue'
 import { executeActuatorJob, executeSensorDataJob } from './deviceSchedule.jobs'
 
-let scheduler: QueueScheduler | null = null
 let worker: Worker<DeviceScheduleJobData> | null = null
 
 async function processDeviceScheduleJob (job: Job<DeviceScheduleJobData>): Promise<void> {
@@ -33,15 +32,7 @@ export function startDeviceScheduleWorker (): void {
     return
   }
 
-  // BullMQ v1 requires QueueScheduler to promote delayed jobs into the waiting queue.
-  scheduler = new QueueScheduler(DEVICE_SCHEDULE_QUEUE_NAME, {
-    connection: getBullMqConnection()
-  })
-
-  scheduler.on('failed', (jobId, err) => {
-    logger.error(`[DeviceScheduleScheduler] Job ${jobId} stalled/failed:`, err)
-  })
-
+  // BullMQ v2+ promotes delayed jobs into the waiting queue internally; QueueScheduler was removed.
   worker = new Worker<DeviceScheduleJobData>(
     DEVICE_SCHEDULE_QUEUE_NAME,
     processDeviceScheduleJob,
@@ -60,17 +51,13 @@ export function startDeviceScheduleWorker (): void {
     logger.error('[DeviceScheduleWorker] Worker error:', err)
   })
 
-  logger.info('[DeviceScheduleWorker] Started (with QueueScheduler for delayed jobs)')
+  logger.info('[DeviceScheduleWorker] Started')
 }
 
 export async function stopDeviceScheduleWorker (): Promise<void> {
   if (worker != null) {
     await worker.close()
     worker = null
-  }
-  if (scheduler != null) {
-    await scheduler.close()
-    scheduler = null
   }
   logger.info('[DeviceScheduleWorker] Stopped')
 }
