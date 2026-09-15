@@ -20,8 +20,13 @@ The MCP server runs as a separate service that Claude connects to via stdio.
 
 ```bash
 # In a new terminal, from the ginem-dev-monorepo root:
-cd packages/api
-npm run mcp:server
+cd packages/mcp-server
+npm run dev
+```
+
+Or for production:
+```bash
+npm start
 ```
 
 You should see:
@@ -42,7 +47,7 @@ Create or update `~/.claude/profiles.json` (on macOS/Linux) or `%AppData%\Anthro
         "ginem": {
           "command": "tsx",
           "args": [
-            "/path/to/ginem-dev-monorepo/packages/api/src/mcp/ginem-mcp-server.ts"
+            "/path/to/ginem-dev-monorepo/packages/mcp-server/src/ginem-mcp-server.ts"
           ],
           "disabled": false
         }

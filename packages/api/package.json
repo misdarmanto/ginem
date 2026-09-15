@@ -7,7 +7,6 @@
     "dev": "tsx watch server.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node build/server.js",
-    "mcp:server": "tsx src/mcp/ginem-mcp-server.ts",
     "lint": "eslint . --ext ts",
     "lint:fix": "eslint . --ext ts --fix",
     "test": "jest",

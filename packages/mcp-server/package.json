@@ -1,0 +1,31 @@
+{
+  "name": "mcp-server",
+  "version": "1.0.0",
+  "description": "MCP (Model Context Protocol) server for Ginem - enables Claude and other AI systems to control smart home",
+  "main": "build/ginem-mcp-server.js",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/ginem-mcp-server.ts",
+    "start": "tsx src/ginem-mcp-server.ts",
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint . --ext ts",
+    "lint:fix": "eslint . --ext ts --fix"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "dotenv": "^16.3.1",
+    "pino": "^8.17.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.5",
+    "@typescript-eslint/eslint-plugin": "^6.14.0",
+    "@typescript-eslint/parser": "^6.14.0",
+    "eslint": "^8.55.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=22.0.0",
+    "npm": ">=9.0.0"
+  }
+}
