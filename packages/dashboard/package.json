@@ -7,11 +7,12 @@
   "scripts": {
     "dev": "vite",
     "dev:backend": "tsx watch server.ts",
-    "dev:all": "concurrently \"npm run dev\" \"npm run dev:backend\"",
+    "dev:all": "concurrently \"npm run dev\" \"npm run dev:backend\" --names \"FRONTEND,BACKEND\" --prefix \"[{name}]\" --kill-others-on-exit",
     "build": "tsc && vite build",
     "build:backend": "tsc",
     "preview": "vite preview",
     "start": "node build/server.js",
+    "start:prod": "npm run build && npm run build:backend && node build/server.js",
     "lint": "eslint . --ext ts,tsx",
     "lint:fix": "eslint . --ext ts,tsx --fix",
     "test": "vitest",

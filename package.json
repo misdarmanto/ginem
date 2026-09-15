@@ -7,8 +7,8 @@
     "packages/dashboard"
   ],
   "scripts": {
-    "dev": "npm run dev -w packages/dashboard",
-    "start": "npm run start -w packages/dashboard",
+    "dev": "npm run dev:all -w packages/dashboard",
+    "start": "npm run start:prod -w packages/dashboard",
     "build": "npm run build -w packages/dashboard",
     "test": "npm run test -w packages/dashboard",
     "test:run": "npm run test:run -w packages/dashboard",
