@@ -4,7 +4,6 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
   TextContent,
-  ToolUseBlock,
 } from "@modelcontextprotocol/sdk/types.js";
 
 interface DeviceInfo {
@@ -205,7 +204,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 
 // Tool: Call handler
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  const { name, arguments: args } = request.params;
+  const { name, arguments: args = {} } = request.params;
 
   try {
     let result: ToolResult;
