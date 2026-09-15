@@ -28,6 +28,8 @@ import {
   Stack,
   Divider,
   alpha,
+  Autocomplete,
+  Paper,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import {
@@ -292,15 +294,24 @@ export default function AppLayout() {
     return name.split(" ")[0] ?? name;
   }, [profile?.userName]);
 
+  const allPages = useMemo(() => [...mainNav, ...manageNav], []);
+
   const handleSearchSubmit = (event: FormEvent) => {
     event.preventDefault();
     const q = search.trim().toLowerCase();
     if (!q) return;
-    const match = [...mainNav, ...manageNav].find((item) =>
+    const match = allPages.find((item) =>
       item.title.toLowerCase().includes(q),
     );
     if (match) {
       navigate(match.link);
+      setSearch("");
+    }
+  };
+
+  const handleSearchSelect = (_event: React.SyntheticEvent, value: NavItem | null) => {
+    if (value) {
+      navigate(value.link);
       setSearch("");
     }
   };
@@ -402,34 +413,122 @@ export default function AppLayout() {
                 </IconButton>
               ) : null}
 
-              <Box
-                component="form"
-                onSubmit={handleSearchSubmit}
+              <Autocomplete
+                freeSolo
+                options={allPages}
+                getOptionLabel={(option) => (typeof option === "string" ? option : option.title)}
+                value={search ? allPages.find((p) => p.title.toLowerCase() === search.toLowerCase()) || search : null}
+                onChange={handleSearchSelect}
+                inputValue={search}
+                onInputChange={(_event, newInputValue) => setSearch(newInputValue)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && search.trim()) {
+                    handleSearchSubmit(event as any);
+                  }
+                }}
                 sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1,
                   flex: 1,
                   maxWidth: 520,
-                  px: 1.75,
-                  py: 0.85,
-                  borderRadius: 999,
-                  bgcolor: alpha(
-                    brand.indigo,
-                    theme.palette.mode === "light" ? 0.08 : 0.15,
-                  ),
-                  border: `1px solid ${alpha(brand.indigo, 0.12)}`,
+                  "& .MuiOutlinedInput-root": {
+                    padding: 0,
+                    paddingLeft: 1.5,
+                    paddingRight: 1.5,
+                    height: "auto",
+                    backgroundColor: theme.palette.background.paper,
+                    border: `1px solid ${theme.palette.mode === "light" ? "#e0e0e0" : "#424242"}`,
+                    borderRadius: 1.5,
+                    transition: "all 0.2s ease",
+                    "&:hover": {
+                      borderColor: theme.palette.mode === "light" ? "#bdbdbd" : "#616161",
+                    },
+                    "&.Mui-focused": {
+                      borderColor: brand.indigo,
+                      boxShadow: `0 0 0 3px ${alpha(brand.indigo, 0.1)}`,
+                    },
+                    "& fieldset": {
+                      border: "none",
+                    },
+                  },
+                  "& .MuiOutlinedInput-input": {
+                    padding: "12px 0 !important",
+                    fontSize: 14,
+                    color: "text.primary",
+                    "&::placeholder": {
+                      color: "text.secondary",
+                      opacity: 1,
+                    },
+                  },
+                  "& .MuiAutocomplete-endAdornment": {
+                    display: "none",
+                  },
+                  "& .MuiAutocomplete-popper": {
+                    marginTop: "8px !important",
+                  },
+                  "& .MuiAutocomplete-paper": {
+                    marginTop: 0,
+                  },
                 }}
-              >
-                <SearchIcon sx={{ color: "text.secondary", fontSize: 20 }} />
-                <InputBase
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search pages…"
-                  inputProps={{ "aria-label": "Search pages" }}
-                  sx={{ flex: 1, fontSize: 14 }}
-                />
-              </Box>
+                renderInput={(params) => (
+                  <Box
+                    {...params.InputProps}
+                    component="div"
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                      width: "100%",
+                    }}
+                  >
+                    <SearchIcon sx={{ color: "text.secondary", fontSize: 20, flexShrink: 0 }} />
+                    <InputBase
+                      {...params.inputProps}
+                      placeholder="Search pages…"
+                      sx={{
+                        flex: 1,
+                        fontSize: 14,
+                        "& input": {
+                          padding: "12px 0 !important",
+                        },
+                      }}
+                    />
+                  </Box>
+                )}
+                PaperComponent={(props) => (
+                  <Paper
+                    {...props}
+                    sx={{
+                      ...props.sx,
+                      bgcolor: "background.paper",
+                      backgroundImage: "none",
+                      boxShadow: `0 4px 12px ${alpha(theme.palette.mode === "light" ? "#000" : "#fff", 0.1)}`,
+                      borderRadius: 1.5,
+                      border: `1px solid ${theme.palette.mode === "light" ? "#e0e0e0" : "#424242"}`,
+                      backdropFilter: "blur(8px)",
+                      marginTop: "8px",
+                    }}
+                  />
+                )}
+                ListboxProps={{
+                  sx: {
+                    p: 0.5,
+                    "& .MuiAutocomplete-option": {
+                      borderRadius: 1,
+                      px: 1.5,
+                      py: 1,
+                      mb: 0.25,
+                      fontSize: 14,
+                      backgroundColor: "transparent",
+                      "&[aria-selected='true']": {
+                        bgcolor: alpha(brand.indigo, 0.08),
+                        color: "primary.main",
+                      },
+                      "&:hover, &[data-kb-item-focused]": {
+                        bgcolor: alpha(brand.indigo, 0.06),
+                      },
+                    },
+                  },
+                }}
+              />
             </Stack>
 
             <Stack direction="row" alignItems="center" spacing={0.75}>
