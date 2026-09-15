@@ -4,24 +4,17 @@
   "description": "Modern monorepo with Express API and React Dashboard",
   "private": true,
   "workspaces": [
-    "packages/api",
     "packages/dashboard"
   ],
   "scripts": {
-    "dev": "concurrently \"npm run dev -w packages/api\" \"npm run dev -w packages/dashboard\"",
-    "dev:api": "npm run dev -w packages/api",
-    "dev:dashboard": "npm run dev -w packages/dashboard",
-    "start": "concurrently \"npm run start -w packages/api\" \"npm run start -w packages/dashboard\"",
-    "start:api": "npm run start -w packages/api",
-    "start:dashboard": "npm run start -w packages/dashboard",
-    "build": "npm run build --workspaces",
-    "build:api": "npm run build -w packages/api",
-    "build:dashboard": "npm run build -w packages/dashboard",
-    "test": "npm run test --workspaces",
-    "test:run": "npm run test:run --workspaces",
-    "lint": "npm run lint --workspaces",
-    "lint:fix": "npm run lint:fix --workspaces",
-    "clean": "rm -rf node_modules && npm install"
+    "dev": "npm run dev -w packages/dashboard",
+    "start": "npm run start -w packages/dashboard",
+    "build": "npm run build -w packages/dashboard",
+    "test": "npm run test -w packages/dashboard",
+    "test:run": "npm run test:run -w packages/dashboard",
+    "lint": "npm run lint -w packages/dashboard",
+    "lint:fix": "npm run lint:fix -w packages/dashboard",
+    "clean": "rm -rf node_modules packages/*/node_modules && npm install"
   },
   "devDependencies": {
     "concurrently": "^8.2.1"
