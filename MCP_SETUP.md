@@ -192,13 +192,13 @@ IoT Devices (ESP32, sensors, actuators)
 ### MCP Server won't start
 ```bash
 # Make sure you're in the right directory
-cd /path/to/ginem-dev-monorepo/packages/api
+cd /path/to/ginem-dev-monorepo/packages/mcp-server
 
 # Check Node.js version
 node --version  # Should be 22+
 
 # Try running directly
-npx tsx src/mcp/ginem-mcp-server.ts
+npx tsx src/ginem-mcp-server.ts
 ```
 
 ### Claude can't access MCP tools
