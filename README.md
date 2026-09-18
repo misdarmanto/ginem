@@ -54,6 +54,20 @@ Ginem is designed to be device-agnostic. The current prototype uses ESP32 with D
 
 ---
 
+## System Architecture
+
+The LLM does not directly control hardware. Every device action must pass through validated backend tools before an MQTT command is published to a registered IoT device.
+
+**Flow:**
+1. User sends natural language command via WhatsApp or Web Chat
+2. AI Agent (LangChain) interprets the command and calls backend tools
+3. Backend tools validate device existence, permissions, and action compatibility
+4. Valid commands are published to MQTT broker
+5. IoT devices receive and execute the command
+6. Device response is logged and returned to user
+
+---
+
 ## Project Structure
 
 This is a **monorepo** containing both API backend and web dashboard in a single repository using npm workspaces.
@@ -63,6 +77,7 @@ ginem-dev-monorepo/
 ├── packages/
 │   ├── api/              # Express.js backend, AI Agent, services
 │   └── dashboard/        # React frontend, web chat, admin dashboard
+├── docker-compose.yml    # MySQL, Redis, RabbitMQ, and API container
 └── package.json          # npm workspaces root
 ```
 
@@ -70,12 +85,38 @@ ginem-dev-monorepo/
 
 **Prerequisites:**
 - Node.js 22+ (use `nvm use 22`)
-- MySQL running
-- Redis running
-- RabbitMQ running
+- Docker & Docker Compose (recommended), or MySQL, Redis, RabbitMQ running locally
 - HiveMQ MQTT broker (cloud or local)
 
-**Install & Run:**
+**Option A: Run with Docker (recommended)**
+
+This spins up MySQL, Redis, RabbitMQ, and the API backend together via `docker-compose.yml`.
+
+```bash
+# 1. Copy and configure environment variables at the project root
+cp packages/api/.env.example .env
+
+# 2. Build and start all services
+docker compose up -d --build
+
+# 3. Check logs
+docker compose logs -f app
+
+# Stop all services
+docker compose down
+```
+
+The API container runs migrations automatically on startup (`RUN_MIGRATIONS=true`). The dashboard is not included in `docker-compose.yml` and should be run separately:
+
+```bash
+cd packages/dashboard
+npm install
+npm run dev
+```
+
+**Option B: Run manually (without Docker)**
+
+Make sure MySQL, Redis, and RabbitMQ are running locally, then:
 
 ```bash
 # Install all dependencies
@@ -95,20 +136,7 @@ npm start
 - Dashboard: `http://localhost:5173`
 - API: `http://localhost:8000`
 - Swagger Docs: `http://localhost:8000/docs`
-
----
-
-## System Architecture
-
-The LLM does not directly control hardware. Every device action must pass through validated backend tools before an MQTT command is published to a registered IoT device.
-
-**Flow:**
-1. User sends natural language command via WhatsApp or Web Chat
-2. AI Agent (LangChain) interprets the command and calls backend tools
-3. Backend tools validate device existence, permissions, and action compatibility
-4. Valid commands are published to MQTT broker
-5. IoT devices receive and execute the command
-6. Device response is logged and returned to user
+- RabbitMQ Management UI: `http://localhost:15672` (Docker only)
 
 ---
 
