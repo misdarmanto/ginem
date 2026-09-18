@@ -52,11 +52,17 @@ The system processes the command through an LLM-based AI Agent, retrieves device
 
 Ginem is designed to be device-agnostic. The current prototype uses ESP32 with DHT11, relay, and LED as the reference hardware, but the platform is not limited to ESP32. Any internet-connected microcontroller or IoT device can be integrated as long as it is registered in the dashboard and follows the MQTT topic and payload contract.
 
+<img width="1280" height="691" alt="1-ginem-portof" src="https://github.com/user-attachments/assets/836a2fd8-0d29-4c52-859f-9a7b6ec9f056" />
+
+
 ---
 
 ## System Architecture
 
 The LLM does not directly control hardware. Every device action must pass through validated backend tools before an MQTT command is published to a registered IoT device.
+
+<img width="1447" height="1087" alt="ginem-architecture" src="https://github.com/user-attachments/assets/f8549be7-fc99-4e3d-aedc-e35a9e8e085a" />
+
 
 **Flow:**
 1. User sends natural language command via WhatsApp or Web Chat
