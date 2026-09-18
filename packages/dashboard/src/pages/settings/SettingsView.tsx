@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Box,
   Typography,
@@ -33,6 +34,7 @@ import { IconMenus } from "@/assets/icons";
 import { ROUTES } from "@/routes/routes";
 
 export default function SettingsView() {
+  const { t } = useTranslation();
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [connectLoading, setConnectLoading] = useState(false);
@@ -86,7 +88,7 @@ export default function SettingsView() {
       refetchStatus();
     } catch (err) {
       onError(err);
-      setError("Failed to connect");
+      setError(t("settings.failedToConnect"));
     } finally {
       setConnectLoading(false);
     }
@@ -99,7 +101,7 @@ export default function SettingsView() {
       setConnecting(false);
       refetchStatus();
     } catch {
-      setError("Failed to disconnect");
+      setError(t("settings.failedToDisconnect"));
     }
   };
 
@@ -109,12 +111,12 @@ export default function SettingsView() {
       await selectModel.mutateAsync({ modelId });
       setAppAlert({
         isDisplayAlert: true,
-        message: "Model changed successfully",
+        message: t("settings.modelChangedSuccess"),
         alertType: "success",
       });
     } catch (err) {
       onError(err);
-      setModelError("Failed to change model");
+      setModelError(t("settings.failedToChangeModel"));
     }
   };
 
@@ -144,15 +146,15 @@ export default function SettingsView() {
       <BreadCrumberStyle
         navigation={[
           {
-            label: "Settings",
+            label: t("nav.settings"),
             link: ROUTES.settings,
             icon: <IconMenus.settings fontSize="small" />,
           },
         ]}
       />
       <PageHeader
-        title="Settings"
-        subtitle="WhatsApp connection and model preferences"
+        title={t("settings.title")}
+        subtitle={t("settings.subtitle")}
       />
 
       <Grid container spacing={3}>
@@ -160,7 +162,7 @@ export default function SettingsView() {
           <Card sx={{ borderRadius: 2, height: "100%" }}>
             <CardContent sx={{ p: 4 }}>
               <Typography variant="h6" fontWeight={600} mb={2}>
-                WhatsApp Connection
+                {t("settings.whatsappConnection")}
               </Typography>
 
               {loadingStatus ? (
@@ -208,7 +210,7 @@ export default function SettingsView() {
                   />
                 ) : (
                   <Typography color="text.secondary">
-                    Click connect to start pairing
+                    {t("settings.clickToConnect")}
                   </Typography>
                 )}
               </Box>
@@ -226,7 +228,7 @@ export default function SettingsView() {
                     status?.connectionStatus === "connected"
                   }
                 >
-                  Connect
+                  {t("settings.connect")}
                 </Button>
 
                 <Button
@@ -240,7 +242,7 @@ export default function SettingsView() {
                     status?.connectionStatus !== "connected"
                   }
                 >
-                  Disconnect
+                  {t("settings.disconnect")}
                 </Button>
               </Stack>
             </CardContent>
@@ -251,11 +253,11 @@ export default function SettingsView() {
           <Card sx={{ borderRadius: 2, height: "100%" }}>
             <CardContent sx={{ p: 4 }}>
               <Typography variant="h6" fontWeight={600} mb={2}>
-                LLM Settings
+                {t("settings.llmSettings")}
               </Typography>
 
               <Typography variant="body2" color="text.secondary" mb={2}>
-                Choose which model will be used for AI responses.
+                {t("settings.llmSettingsSubtitle")}
               </Typography>
 
               {selectedLoading || modelsLoading ? (
@@ -266,7 +268,7 @@ export default function SettingsView() {
                     <Stack spacing={2} mb={2}>
                       <Box>
                         <Typography variant="caption" color="text.secondary">
-                          Currently Selected:
+                          {t("settings.currentlySelected")}
                         </Typography>
                         <Chip
                           label={`${defaultSelectedModel.provider} - ${defaultSelectedModel.name}`}
@@ -280,10 +282,10 @@ export default function SettingsView() {
                   {modelError && <Alert severity="error">{modelError}</Alert>}
 
                   <FormControl fullWidth disabled={selectModel.isPending}>
-                    <InputLabel>Select Model</InputLabel>
+                    <InputLabel>{t("settings.selectModel")}</InputLabel>
                     <Select
                       value={defaultSelectedModel?.id || ""}
-                      label="Select Model"
+                      label={t("settings.selectModel")}
                       onChange={(e) => handleSelectModel(e.target.value)}
                     >
                       {Object.entries(groupedModels).map(
@@ -305,7 +307,7 @@ export default function SettingsView() {
                     <Box sx={{ mt: 2, display: "flex", alignItems: "center", gap: 1 }}>
                       <CircularProgress size={20} />
                       <Typography variant="body2" color="text.secondary">
-                        Changing model...
+                        {t("settings.changingModel")}
                       </Typography>
                     </Box>
                   )}

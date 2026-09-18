@@ -9,10 +9,12 @@ import {
   Stack,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useLoginMutation } from "@/hooks/services";
 import { useToken } from "@/hooks/use-token";
 
 export default function LoginView() {
+  const { t } = useTranslation();
   const loginMutation = useLoginMutation();
   const { setToken } = useToken();
   const navigate = useNavigate();
@@ -59,19 +61,19 @@ export default function LoginView() {
         <Card sx={{ width: "100%", p: { xs: 3, sm: 4 } }}>
           <Stack spacing={1} mb={3} textAlign="center">
             <Typography variant="overline" color="primary">
-              Ginem AI
+              {t("common.appName")}
             </Typography>
             <Typography variant="h4" fontWeight={800}>
-              Welcome back
+              {t("auth.welcomeBack")}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Sign in to access your control panel.
+              {t("auth.signInSubtitle")}
             </Typography>
           </Stack>
 
           <Stack spacing={2}>
             <TextField
-              label="E-mail"
+              label={t("auth.email")}
               value={userEmail}
               size="medium"
               fullWidth
@@ -81,7 +83,7 @@ export default function LoginView() {
             />
 
             <TextField
-              label="Password"
+              label={t("auth.password")}
               value={userPassword}
               size="medium"
               type="password"
@@ -98,7 +100,7 @@ export default function LoginView() {
               onClick={handleSubmit}
               disabled={loginMutation.isPending}
             >
-              {loginMutation.isPending ? "Signing in…" : "Login"}
+              {loginMutation.isPending ? t("auth.signingIn") : t("auth.login")}
             </Button>
           </Stack>
         </Card>

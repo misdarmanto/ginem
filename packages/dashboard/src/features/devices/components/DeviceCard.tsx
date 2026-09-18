@@ -14,6 +14,7 @@ import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import ReactApexChart from "react-apexcharts";
 import type { ApexOptions } from "apexcharts";
 import moment from "moment";
+import { useTranslation } from "react-i18next";
 
 export interface DeviceLogItem {
   deviceLogId: number;
@@ -54,6 +55,7 @@ export default function DeviceCard({
   onDelete,
 }: DeviceCardProps) {
   const theme = useTheme();
+  const { t } = useTranslation();
   const status = String(device?.deviceStatus ?? "offline");
   const statusColor = getStatusColor(status);
   const isOnline = statusColor === "success";
@@ -350,10 +352,10 @@ export default function DeviceCard({
                   fontWeight={600}
                   color="primary.main"
                 >
-                  No log data
+                  {t("devices.noLogData")}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
-                  Chart will appear when logs arrive
+                  {t("devices.chartWillAppear")}
                 </Typography>
               </Box>
             )}
@@ -365,11 +367,11 @@ export default function DeviceCard({
             justifyContent="flex-end"
             sx={{ pt: 0.25 }}
           >
-            <Tooltip title="Detail">
+            <Tooltip title={t("common.detail")}>
               <IconButton
                 size="small"
                 onClick={onDetail}
-                aria-label="Detail"
+                aria-label={t("common.detail")}
                 sx={{
                   border: "1px solid",
                   borderColor: alpha(primaryMain, isDark ? 0.22 : 0.12),
@@ -385,11 +387,11 @@ export default function DeviceCard({
                 <VisibilityOutlinedIcon fontSize="small" />
               </IconButton>
             </Tooltip>
-            <Tooltip title="Update">
+            <Tooltip title={t("devices.update")}>
               <IconButton
                 size="small"
                 onClick={onEdit}
-                aria-label="Update"
+                aria-label={t("devices.update")}
                 sx={{
                   border: "1px solid",
                   borderColor: alpha(primaryMain, isDark ? 0.22 : 0.12),
@@ -405,11 +407,11 @@ export default function DeviceCard({
                 <EditOutlinedIcon fontSize="small" />
               </IconButton>
             </Tooltip>
-            <Tooltip title="Delete">
+            <Tooltip title={t("common.delete")}>
               <IconButton
                 size="small"
                 onClick={onDelete}
-                aria-label="Delete"
+                aria-label={t("common.delete")}
                 sx={{
                   border: "1px solid",
                   borderColor: alpha(theme.palette.error.main, 0.28),
