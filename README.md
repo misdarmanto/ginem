@@ -52,6 +52,26 @@ The system processes the command through an LLM-based AI Agent, retrieves device
 
 Ginem is designed to be device-agnostic. The current prototype uses ESP32 with DHT11, relay, and LED as the reference hardware, but the platform is not limited to ESP32. Any internet-connected microcontroller or IoT device can be integrated as long as it is registered in the dashboard and follows the MQTT topic and payload contract.
 
+<img width="1280" height="691" alt="1-ginem-portof" src="https://github.com/user-attachments/assets/836a2fd8-0d29-4c52-859f-9a7b6ec9f056" />
+
+
+---
+
+## System Architecture
+
+The LLM does not directly control hardware. Every device action must pass through validated backend tools before an MQTT command is published to a registered IoT device.
+
+<img width="1447" height="1087" alt="ginem-architecture" src="https://github.com/user-attachments/assets/f8549be7-fc99-4e3d-aedc-e35a9e8e085a" />
+
+
+**Flow:**
+1. User sends natural language command via WhatsApp or Web Chat
+2. AI Agent (LangChain) interprets the command and calls backend tools
+3. Backend tools validate device existence, permissions, and action compatibility
+4. Valid commands are published to MQTT broker
+5. IoT devices receive and execute the command
+6. Device response is logged and returned to user
+
 ---
 
 ## Project Structure
@@ -63,6 +83,7 @@ ginem-dev-monorepo/
 ├── packages/
 │   ├── api/              # Express.js backend, AI Agent, services
 │   └── dashboard/        # React frontend, web chat, admin dashboard
+├── docker-compose.yml    # MySQL, Redis, RabbitMQ, and API container
 └── package.json          # npm workspaces root
 ```
 
@@ -70,12 +91,38 @@ ginem-dev-monorepo/
 
 **Prerequisites:**
 - Node.js 22+ (use `nvm use 22`)
-- MySQL running
-- Redis running
-- RabbitMQ running
+- Docker & Docker Compose (recommended), or MySQL, Redis, RabbitMQ running locally
 - HiveMQ MQTT broker (cloud or local)
 
-**Install & Run:**
+**Option A: Run with Docker (recommended)**
+
+This spins up MySQL, Redis, RabbitMQ, and the API backend together via `docker-compose.yml`.
+
+```bash
+# 1. Copy and configure environment variables at the project root
+cp packages/api/.env.example .env
+
+# 2. Build and start all services
+docker compose up -d --build
+
+# 3. Check logs
+docker compose logs -f app
+
+# Stop all services
+docker compose down
+```
+
+The API container runs migrations automatically on startup (`RUN_MIGRATIONS=true`). The dashboard is not included in `docker-compose.yml` and should be run separately:
+
+```bash
+cd packages/dashboard
+npm install
+npm run dev
+```
+
+**Option B: Run manually (without Docker)**
+
+Make sure MySQL, Redis, and RabbitMQ are running locally, then:
 
 ```bash
 # Install all dependencies
@@ -95,20 +142,7 @@ npm start
 - Dashboard: `http://localhost:5173`
 - API: `http://localhost:8000`
 - Swagger Docs: `http://localhost:8000/docs`
-
----
-
-## System Architecture
-
-The LLM does not directly control hardware. Every device action must pass through validated backend tools before an MQTT command is published to a registered IoT device.
-
-**Flow:**
-1. User sends natural language command via WhatsApp or Web Chat
-2. AI Agent (LangChain) interprets the command and calls backend tools
-3. Backend tools validate device existence, permissions, and action compatibility
-4. Valid commands are published to MQTT broker
-5. IoT devices receive and execute the command
-6. Device response is logged and returned to user
+- RabbitMQ Management UI: `http://localhost:15672` (Docker only)
 
 ---
 
@@ -213,57 +247,6 @@ Ginem supports two interaction channels:
 | Integrations | WhatsApp via Baileys |
 | Documentation | Swagger/OpenAPI |
 | Infrastructure | Docker, Docker Compose, npm workspaces |
-
----
-
-## Background
-
-**Ginem** was developed as part of my final thesis in **Telecommunication Engineering** at **Institut Teknologi Sumatera**.
-
-The research focuses on building an LLM-based AI Agent for controlling and monitoring IoT devices using natural language. The system combines AI Agent reasoning, RabbitMQ-based asynchronous processing, function calling, RAG, MQTT-based device communication, registered device management, scheduling, and dynamic rule automation.
-
-Beyond the thesis, this project represents my interest in building backend systems that connect AI, automation, distributed architecture, and real-world hardware.
-
----
-
-## Project Setup
-
-### Environment Variables
-
-Create `.env` files in each package:
-
-**packages/api/.env:**
-```
-APP_MODE=development
-APP_PORT=8000
-DB_HOST=localhost
-DB_USER_NAME=root
-DB_PASSWORD=root
-DB_NAME=ta_project
-DB_PORT=3306
-REDIS_HOST=127.0.0.1
-REDIS_PORT=6379
-RABBITMQ_URL=amqp://guest:guest@127.0.0.1:5672
-MQTT_BROKER_URL=mqtts://...your-hivemq-broker...
-OPENAI_API_KEY=sk-...
-CORS_ORIGIN=http://localhost:5173
-```
-
-**packages/dashboard/.env:**
-```
-VITE_BASE_URL=http://localhost:8000/api/v1
-```
-
-### Database Setup
-
-```bash
-# Run migrations
-cd packages/api
-npm run migrate
-
-# Run seeders (optional)
-npm run seed
-```
 
 ---
 
