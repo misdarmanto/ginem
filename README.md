@@ -244,57 +244,6 @@ Ginem supports two interaction channels:
 
 ---
 
-## Background
-
-**Ginem** was developed as part of my final thesis in **Telecommunication Engineering** at **Institut Teknologi Sumatera**.
-
-The research focuses on building an LLM-based AI Agent for controlling and monitoring IoT devices using natural language. The system combines AI Agent reasoning, RabbitMQ-based asynchronous processing, function calling, RAG, MQTT-based device communication, registered device management, scheduling, and dynamic rule automation.
-
-Beyond the thesis, this project represents my interest in building backend systems that connect AI, automation, distributed architecture, and real-world hardware.
-
----
-
-## Project Setup
-
-### Environment Variables
-
-Create `.env` files in each package:
-
-**packages/api/.env:**
-```
-APP_MODE=development
-APP_PORT=8000
-DB_HOST=localhost
-DB_USER_NAME=root
-DB_PASSWORD=root
-DB_NAME=ta_project
-DB_PORT=3306
-REDIS_HOST=127.0.0.1
-REDIS_PORT=6379
-RABBITMQ_URL=amqp://guest:guest@127.0.0.1:5672
-MQTT_BROKER_URL=mqtts://...your-hivemq-broker...
-OPENAI_API_KEY=sk-...
-CORS_ORIGIN=http://localhost:5173
-```
-
-**packages/dashboard/.env:**
-```
-VITE_BASE_URL=http://localhost:8000/api/v1
-```
-
-### Database Setup
-
-```bash
-# Run migrations
-cd packages/api
-npm run migrate
-
-# Run seeders (optional)
-npm run seed
-```
-
----
-
 <p align="center">
   <strong>Ginem - Smart Home IoT, powered by AI.</strong>
 </p>
