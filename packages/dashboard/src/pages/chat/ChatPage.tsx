@@ -18,6 +18,7 @@ import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import SchoolIcon from "@mui/icons-material/School";
 import AnalyticsIcon from "@mui/icons-material/Analytics";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
+import { useTranslation } from "react-i18next";
 import { useChatSocket } from "@/hooks/services";
 
 type ChatRole = "user" | "assistant" | "system";
@@ -28,11 +29,11 @@ interface ChatMessage {
   text: string;
 }
 
-const SUGGESTED_PROMPTS = [
-  { text: "Bagaimana cara mengontrol lampu di ruangan?", iconName: "trending" },
-  { text: "Jelaskan cara kerja smart home automation", iconName: "analytics" },
-  { text: "Apa saja device IoT yang bisa diintegrasikan?", iconName: "school" },
-  { text: "Bagaimana cara setup koneksi WiFi device?", iconName: "help" },
+const SUGGESTED_PROMPT_KEYS = [
+  { key: "chatPage.suggestedPrompts.controlLights", iconName: "trending" },
+  { key: "chatPage.suggestedPrompts.howAutomationWorks", iconName: "analytics" },
+  { key: "chatPage.suggestedPrompts.integrableDevices", iconName: "school" },
+  { key: "chatPage.suggestedPrompts.setupWifi", iconName: "help" },
 ];
 
 const getIconComponent = (iconName: string) => {
@@ -53,6 +54,12 @@ const getIconComponent = (iconName: string) => {
 export default function ChatView() {
   const theme = useTheme();
   const navigate = useNavigate();
+  const { t } = useTranslation();
+
+  const SUGGESTED_PROMPTS = SUGGESTED_PROMPT_KEYS.map((item) => ({
+    text: t(item.key),
+    iconName: item.iconName,
+  }));
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -122,13 +129,13 @@ export default function ChatView() {
   const getStatusLabel = () => {
     switch (status) {
       case "open":
-        return "Connected";
+        return t("chatPage.status.connected");
       case "connecting":
-        return "Connecting...";
+        return t("chatPage.status.connecting");
       case "error":
-        return "Disconnected";
+        return t("chatPage.status.disconnected");
       default:
-        return "Initializing...";
+        return t("chatPage.status.initializing");
     }
   };
 
@@ -172,13 +179,13 @@ export default function ChatView() {
                 bgcolor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)",
               },
             }}
-            aria-label="Kembali"
+            aria-label={t("common.back")}
           >
             <ArrowBackIcon fontSize="small" />
           </IconButton>
           <Stack spacing={0.3}>
             <Typography variant="subtitle1" fontWeight={700} sx={{ fontSize: 16 }}>
-              Ginem Chat
+              {t("chatPage.title")}
             </Typography>
             <Stack direction="row" alignItems="center" spacing={0.8}>
               <FiberManualRecordIcon
@@ -246,21 +253,21 @@ export default function ChatView() {
               fontWeight={700}
               sx={{ mb: 1, textAlign: "center", fontSize: { xs: 24, sm: 32 } }}
             >
-              Halo! 👋
+              {t("chatPage.greeting")}
             </Typography>
             <Typography
               variant="h6"
               fontWeight={600}
               sx={{ mb: 1, textAlign: "center", fontSize: 18 }}
             >
-              Apa yang ingin Anda tanyakan?
+              {t("chatPage.whatCanIHelp")}
             </Typography>
             <Typography
               variant="body2"
               color="text.secondary"
               sx={{ mb: 4, textAlign: "center", maxWidth: 500, fontSize: 15 }}
             >
-              Saya siap membantu Anda mengontrol dan mengelola perangkat IoT dengan mudah melalui perintah natural language.
+              {t("chatPage.introText")}
             </Typography>
 
             <Stack
@@ -457,7 +464,7 @@ export default function ChatView() {
                   >
                     <CircularProgress size={18} thickness={4} />
                     <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                      Mengetik...
+                      {t("chatPage.typing")}
                     </Typography>
                   </Box>
                 </Stack>
@@ -516,10 +523,10 @@ export default function ChatView() {
             maxRows={4}
             placeholder={
               status === "connecting"
-                ? "Menghubungkan ke server..."
+                ? t("chatPage.connectingToServer")
                 : status !== "open"
-                  ? "Tunggu koneksi..."
-                  : "Tulis pertanyaan Anda di sini..."
+                  ? t("chatPage.waitingForConnection")
+                  : t("chatPage.writeYourQuestion")
             }
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -587,7 +594,7 @@ export default function ChatView() {
             fontWeight: 500,
           }}
         >
-          🤖 Ginem adalah AI agent yang dapat mengontrol device IoT. Pastikan semua perintah telah Anda verifikasi sebelum dijalankan.
+          🤖 {t("chatPage.disclaimer")}
         </Typography>
       </Box>
     </Box>

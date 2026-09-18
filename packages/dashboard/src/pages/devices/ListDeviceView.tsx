@@ -1,5 +1,6 @@
 import Box from "@mui/material/Box";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   useCreateDeviceMutation,
   useDeleteDeviceMutation,
@@ -79,6 +80,7 @@ const initialEditFormState: DeviceEditFormState = {
 };
 
 export default function ListDeviceView() {
+  const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const search = searchParams.get("search") || "";
@@ -101,9 +103,7 @@ export default function ListDeviceView() {
   const rowCount = data?.totalItems ?? 0;
   const loading = isFetching;
   const lastUpdated = dataUpdatedAt ? new Date(dataUpdatedAt) : null;
-  const errorMessage = isError
-    ? "Failed to load devices. Please try again."
-    : null;
+  const errorMessage = isError ? t("devices.failedToLoad") : null;
 
   const createDevice = useCreateDeviceMutation();
   const updateDevice = useUpdateDeviceMutation();
@@ -143,11 +143,11 @@ export default function ListDeviceView() {
   const handleAddDeviceSubmit = async () => {
     setAddFormError(null);
     if (!addForm.deviceName?.trim()) {
-      setAddFormError("Device name is required.");
+      setAddFormError(t("devices.deviceNameRequired"));
       return;
     }
     if (!addForm.deviceType?.trim()) {
-      setAddFormError("Device type is required.");
+      setAddFormError(t("devices.deviceTypeRequired"));
       return;
     }
     try {
@@ -179,7 +179,7 @@ export default function ListDeviceView() {
     } catch (error: unknown) {
       console.error(error);
       setAddFormError(
-        error instanceof Error ? error.message : "Failed to add device.",
+        error instanceof Error ? error.message : t("devices.failedToAdd"),
       );
     }
   };
@@ -239,7 +239,7 @@ export default function ListDeviceView() {
     setEditFormError(null);
 
     if (!editForm.deviceName?.trim()) {
-      setEditFormError("Device name is required.");
+      setEditFormError(t("devices.deviceNameRequired"));
       return;
     }
     try {
@@ -265,7 +265,7 @@ export default function ListDeviceView() {
     } catch (error: unknown) {
       console.error(error);
       setEditFormError(
-        error instanceof Error ? error.message : "Failed to update device.",
+        error instanceof Error ? error.message : t("devices.failedToUpdate"),
       );
     }
   };
@@ -308,7 +308,7 @@ export default function ListDeviceView() {
         <BreadCrumberStyle
           navigation={[
             {
-              label: "Devices",
+              label: t("nav.devices"),
               link: "/devices",
               icon: <IconMenus.device fontSize="small" />,
             },
@@ -323,11 +323,13 @@ export default function ListDeviceView() {
         >
           <Box>
             <Typography variant="h5" fontWeight={800}>
-              Devices
+              {t("devices.title")}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Manage your devices
-              {lastUpdated ? ` • Updated ${lastUpdated.toLocaleString()}` : ""}
+              {t("devices.subtitle")}
+              {lastUpdated
+                ? ` • ${t("devices.updatedAt", { date: lastUpdated.toLocaleString() })}`
+                : ""}
             </Typography>
           </Box>
           <Button
@@ -335,7 +337,7 @@ export default function ListDeviceView() {
             startIcon={<AddIcon />}
             onClick={handleOpenAddModal}
           >
-            Add Device
+            {t("devices.addDevice")}
           </Button>
         </Stack>
 
@@ -350,7 +352,7 @@ export default function ListDeviceView() {
           bgcolor="background.paper"
         >
           <Stack direction="row" spacing={1} alignItems="center">
-            <Tooltip title="Refresh">
+            <Tooltip title={t("common.refresh")}>
               <span>
                 <IconButton
                   size="small"
@@ -375,7 +377,7 @@ export default function ListDeviceView() {
           >
             <TextField
               size="small"
-              placeholder="Search devices..."
+              placeholder={t("devices.searchPlaceholder")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               InputProps={{
@@ -386,7 +388,7 @@ export default function ListDeviceView() {
                 ),
                 endAdornment: search ? (
                   <InputAdornment position="end">
-                    <Tooltip title="Clear">
+                    <Tooltip title={t("common.clear")}>
                       <IconButton
                         size="small"
                         onClick={() => setSearch("")}
@@ -401,7 +403,7 @@ export default function ListDeviceView() {
             />
             <Stack direction="row" spacing={1} alignItems="center">
               <Button variant="outlined" onClick={handleSearch}>
-                Apply
+                {t("common.apply")}
               </Button>
               <Button
                 variant="text"
@@ -409,7 +411,7 @@ export default function ListDeviceView() {
                 onClick={handleReset}
                 startIcon={<RestartAltIcon fontSize="small" />}
               >
-                Reset
+                {t("common.reset")}
               </Button>
             </Stack>
           </Stack>
@@ -431,8 +433,8 @@ export default function ListDeviceView() {
 
         {(!loading && tableData.length === 0) || rowCount === 0 ? (
           <NoRowsOverlay
-            title="No devices"
-            subtitle="Try adjusting your search or add a new device."
+            title={t("devices.noDevices")}
+            subtitle={t("devices.noDevicesSubtitle")}
           />
         ) : (
           <Grid container spacing={2} sx={{ mt: 2 }}>
@@ -446,7 +448,7 @@ export default function ListDeviceView() {
                   onDelete={() =>
                     handleOpenDeleteModal(
                       row?.deviceId,
-                      row?.deviceName || "Unknown",
+                      row?.deviceName || t("devices.unknownDevice"),
                     )
                   }
                 />
@@ -464,7 +466,10 @@ export default function ListDeviceView() {
             sx={{ mt: 3 }}
           >
             <Typography variant="body2" color="text.secondary">
-              Showing {tableData.length} of {rowCount} items
+              {t("common.showingItems", {
+                shown: tableData.length,
+                total: rowCount,
+              })}
             </Typography>
 
             <Pagination

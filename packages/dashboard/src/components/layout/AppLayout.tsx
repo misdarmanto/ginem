@@ -40,8 +40,10 @@ import {
   ChatBubbleOutlineOutlined,
   Close as CloseIcon,
   Menu as MenuIcon,
+  Translate as TranslateIcon,
 } from "@mui/icons-material";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 import { useAppContext } from "@/context/app.context";
 import { useToken } from "@/hooks/use-token";
@@ -52,6 +54,7 @@ import { NotificationPanel } from "@/features/notifications/components/Notificat
 import { ROUTES } from "@/routes/routes";
 import { brand } from "@/styles/theme";
 import { useMyProfileQuery } from "@/hooks/services";
+import { changeLanguage } from "@/i18n/config";
 
 const drawerWidth = 260;
 
@@ -61,56 +64,62 @@ type NavItem = {
   icon: ReactElement;
 };
 
-const mainNav: NavItem[] = [
-  {
-    title: "Dashboard",
-    link: ROUTES.home,
-    icon: <IconMenus.dashboard fontSize="small" />,
-  },
-  {
-    title: "Devices",
-    link: ROUTES.devices,
-    icon: <IconMenus.device fontSize="small" />,
-  },
-  {
-    title: "Rules",
-    link: ROUTES.rules,
-    icon: <IconMenus.rules fontSize="small" />,
-  },
-  {
-    title: "Scheduler",
-    link: ROUTES.scheduler,
-    icon: <IconMenus.schedule fontSize="small" />,
-  },
-  {
-    title: "Embedding",
-    link: ROUTES.indexing,
-    icon: <IconMenus.vectorIndexes fontSize="small" />,
-  },
-  {
-    title: "Logger",
-    link: ROUTES.logger,
-    icon: <IconMenus.logger fontSize="small" />,
-  },
-];
+function useMainNav(): NavItem[] {
+  const { t } = useTranslation();
+  return [
+    {
+      title: t("nav.dashboard"),
+      link: ROUTES.home,
+      icon: <IconMenus.dashboard fontSize="small" />,
+    },
+    {
+      title: t("nav.devices"),
+      link: ROUTES.devices,
+      icon: <IconMenus.device fontSize="small" />,
+    },
+    {
+      title: t("nav.rules"),
+      link: ROUTES.rules,
+      icon: <IconMenus.rules fontSize="small" />,
+    },
+    {
+      title: t("nav.scheduler"),
+      link: ROUTES.scheduler,
+      icon: <IconMenus.schedule fontSize="small" />,
+    },
+    {
+      title: t("nav.embedding"),
+      link: ROUTES.indexing,
+      icon: <IconMenus.vectorIndexes fontSize="small" />,
+    },
+    {
+      title: t("nav.logger"),
+      link: ROUTES.logger,
+      icon: <IconMenus.logger fontSize="small" />,
+    },
+  ];
+}
 
-const manageNav: NavItem[] = [
-  {
-    title: "Admin",
-    link: ROUTES.admins,
-    icon: <IconMenus.admin fontSize="small" />,
-  },
-  {
-    title: "Settings",
-    link: ROUTES.settings,
-    icon: <IconMenus.settings fontSize="small" />,
-  },
-  {
-    title: "Profile",
-    link: ROUTES.profile,
-    icon: <IconMenus.profile fontSize="small" />,
-  },
-];
+function useManageNav(): NavItem[] {
+  const { t } = useTranslation();
+  return [
+    {
+      title: t("nav.admin"),
+      link: ROUTES.admins,
+      icon: <IconMenus.admin fontSize="small" />,
+    },
+    {
+      title: t("nav.settings"),
+      link: ROUTES.settings,
+      icon: <IconMenus.settings fontSize="small" />,
+    },
+    {
+      title: t("nav.profile"),
+      link: ROUTES.profile,
+      icon: <IconMenus.profile fontSize="small" />,
+    },
+  ];
+}
 
 function isRouteActive(pathname: string, link: string) {
   if (link === ROUTES.home) return pathname === ROUTES.home;
@@ -205,6 +214,10 @@ function SidebarContent({
   showClose?: boolean;
   onClose?: () => void;
 }) {
+  const { t } = useTranslation();
+  const mainNav = useMainNav();
+  const manageNav = useManageNav();
+
   return (
     <Box
       sx={{
@@ -239,15 +252,19 @@ function SidebarContent({
           </Box>
           <Box>
             <Typography fontWeight={800} lineHeight={1.1} color="text.primary">
-              Ginem AI
+              {t("common.appName")}
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              Control panel
+              {t("common.controlPanel")}
             </Typography>
           </Box>
         </Stack>
         {showClose ? (
-          <IconButton aria-label="Close menu" onClick={onClose} size="small">
+          <IconButton
+            aria-label={t("header.closeMenu")}
+            onClick={onClose}
+            size="small"
+          >
             <CloseIcon fontSize="small" />
           </IconButton>
         ) : null}
@@ -255,13 +272,13 @@ function SidebarContent({
 
       <Box sx={{ flex: 1, overflowY: "auto", pb: 2 }}>
         <NavSection
-          label="Main menu"
+          label={t("nav.mainMenu")}
           items={mainNav}
           pathname={pathname}
           onNavigate={onNavigate}
         />
         <NavSection
-          label="Manage"
+          label={t("nav.manage")}
           items={manageNav}
           pathname={pathname}
           onNavigate={onNavigate}
@@ -277,6 +294,9 @@ export default function AppLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const pathname = location.pathname;
+  const { t, i18n: i18next } = useTranslation();
+  const mainNav = useMainNav();
+  const manageNav = useManageNav();
 
   const { toggleColorMode } = useContext(ColorModeContext);
   const { appAlert, setAppAlert, isLoading } = useAppContext();
@@ -285,16 +305,26 @@ export default function AppLayout() {
 
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [anchorElUser, setAnchorElUser] = useState<null | HTMLElement>(null);
+  const [anchorElLanguage, setAnchorElLanguage] =
+    useState<null | HTMLElement>(null);
   const [search, setSearch] = useState("");
   const [notificationOpen, setNotificationOpen] = useState(false);
 
   const displayName = useMemo(() => {
     const name = profile?.userName?.trim();
-    if (!name) return "there";
+    if (!name) return t("header.there");
     return name.split(" ")[0] ?? name;
-  }, [profile?.userName]);
+  }, [profile?.userName, t]);
 
-  const allPages = useMemo(() => [...mainNav, ...manageNav], []);
+  const allPages = useMemo(
+    () => [...mainNav, ...manageNav],
+    [mainNav, manageNav],
+  );
+
+  const handleSelectLanguage = (language: "en" | "id") => {
+    changeLanguage(language);
+    setAnchorElLanguage(null);
+  };
 
   const handleSearchSubmit = (event: FormEvent) => {
     event.preventDefault();
@@ -406,7 +436,7 @@ export default function AppLayout() {
               {isMobile ? (
                 <IconButton
                   edge="start"
-                  aria-label="Open menu"
+                  aria-label={t("header.openMenu")}
                   onClick={() => setMobileDrawerOpen(true)}
                 >
                   <MenuIcon />
@@ -482,7 +512,7 @@ export default function AppLayout() {
                     <SearchIcon sx={{ color: "text.secondary", fontSize: 20, flexShrink: 0 }} />
                     <InputBase
                       {...params.inputProps}
-                      placeholder="Search pages…"
+                      placeholder={t("header.searchPlaceholder")}
                       sx={{
                         flex: 1,
                         fontSize: 14,
@@ -532,9 +562,9 @@ export default function AppLayout() {
             </Stack>
 
             <Stack direction="row" alignItems="center" spacing={0.75}>
-              <Tooltip title="Chat">
+              <Tooltip title={t("header.chat")}>
                 <IconButton
-                  aria-label="Open chat"
+                  aria-label={t("header.chat")}
                   onClick={() => navigate(ROUTES.chat)}
                   sx={{
                     bgcolor: alpha(brand.indigo, 0.06),
@@ -544,9 +574,9 @@ export default function AppLayout() {
                   <ChatBubbleOutlineOutlined fontSize="small" />
                 </IconButton>
               </Tooltip>
-              <Tooltip title="Notifications">
+              <Tooltip title={t("header.notifications")}>
                 <IconButton
-                  aria-label="Notifications"
+                  aria-label={t("header.notifications")}
                   onClick={() => setNotificationOpen(true)}
                   sx={{
                     bgcolor: alpha(brand.indigo, 0.06),
@@ -556,15 +586,48 @@ export default function AppLayout() {
                   <NotificationsNoneOutlined fontSize="small" />
                 </IconButton>
               </Tooltip>
+              <Tooltip title={t("language.label")}>
+                <IconButton
+                  aria-label={t("language.label")}
+                  onClick={(e) => setAnchorElLanguage(e.currentTarget)}
+                  sx={{
+                    bgcolor: alpha(brand.indigo, 0.06),
+                    "&:hover": { bgcolor: alpha(brand.indigo, 0.12) },
+                  }}
+                >
+                  <TranslateIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Menu
+                anchorEl={anchorElLanguage}
+                open={Boolean(anchorElLanguage)}
+                onClose={() => setAnchorElLanguage(null)}
+                anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+                transformOrigin={{ vertical: "top", horizontal: "right" }}
+                PaperProps={{ sx: { mt: 1, minWidth: 160, borderRadius: 2 } }}
+              >
+                <MenuItem
+                  selected={i18next.language === "en"}
+                  onClick={() => handleSelectLanguage("en")}
+                >
+                  {t("language.en")}
+                </MenuItem>
+                <MenuItem
+                  selected={i18next.language === "id"}
+                  onClick={() => handleSelectLanguage("id")}
+                >
+                  {t("language.id")}
+                </MenuItem>
+              </Menu>
               <Tooltip
                 title={
                   theme.palette.mode === "dark"
-                    ? "Switch to light"
-                    : "Switch to dark"
+                    ? t("header.switchToLight")
+                    : t("header.switchToDark")
                 }
               >
                 <IconButton
-                  aria-label="Toggle color mode"
+                  aria-label={t("header.switchToDark")}
                   onClick={toggleColorMode}
                   sx={{
                     bgcolor: alpha(brand.indigo, 0.06),
@@ -585,7 +648,7 @@ export default function AppLayout() {
                 sx={{ mx: 0.5, my: 1 }}
               />
 
-              <Tooltip title="Account">
+              <Tooltip title={t("header.account")}>
                 <IconButton
                   onClick={(e) => setAnchorElUser(e.currentTarget)}
                   sx={{ borderRadius: 2, px: 1, gap: 1 }}
@@ -601,10 +664,10 @@ export default function AppLayout() {
                       fontWeight={700}
                       lineHeight={1.2}
                     >
-                      Hi, {displayName}
+                      {t("header.hi", { name: displayName })}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      {profile?.userEmail ?? "Account"}
+                      {profile?.userEmail ?? t("header.account")}
                     </Typography>
                   </Box>
                   <Avatar
@@ -635,7 +698,7 @@ export default function AppLayout() {
                     navigate(ROUTES.profile);
                   }}
                 >
-                  Profile
+                  {t("nav.profile")}
                 </MenuItem>
                 <MenuItem
                   onClick={() => {
@@ -643,7 +706,7 @@ export default function AppLayout() {
                     navigate(ROUTES.settings);
                   }}
                 >
-                  Settings
+                  {t("nav.settings")}
                 </MenuItem>
                 <Divider />
                 <MenuItem
@@ -653,7 +716,7 @@ export default function AppLayout() {
                     window.location.reload();
                   }}
                 >
-                  Logout
+                  {t("header.logout")}
                 </MenuItem>
               </Menu>
             </Stack>

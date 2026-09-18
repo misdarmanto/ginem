@@ -8,6 +8,7 @@ import {
   Grid,
   useTheme,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { ROUTES } from "@/routes/routes";
 import BreadCrumberStyle from "@/components/common/Breadcrumb";
 import { IconMenus } from "@/assets/icons";
@@ -19,6 +20,7 @@ import { useMyProfileQuery } from "@/hooks/services";
 ============================================================ */
 const ProfileView = () => {
   const theme = useTheme();
+  const { t } = useTranslation();
 
   const { data: myProfile } = useMyProfileQuery();
 
@@ -28,7 +30,7 @@ const ProfileView = () => {
       <BreadCrumberStyle
         navigation={[
           {
-            label: "Profile",
+            label: t("nav.profile"),
             link: ROUTES.profile,
             icon: <IconMenus.profile fontSize="small" />,
           },
@@ -75,7 +77,9 @@ const ProfileView = () => {
             </Stack>
 
             <Typography color="text.secondary" fontSize={14} mt={1.5}>
-              Bergabung sejak {convertTime(myProfile?.createdAt + "") ?? "_"}
+              {t("profile.joinedSince", {
+                date: convertTime(myProfile?.createdAt + "") ?? "_",
+              })}
             </Typography>
           </Box>
         </Stack>
@@ -84,30 +88,36 @@ const ProfileView = () => {
       {/* ================= DETAIL INFO ================= */}
       <Card sx={{ mt: 3, p: 4 }}>
         <Typography variant="h6" fontWeight={700} mb={3}>
-          Informasi Akun
+          {t("profile.accountInfo")}
         </Typography>
 
         <Divider sx={{ mb: 3 }} />
 
         <Grid container spacing={3}>
           <Grid item xs={12} md={6}>
-            <InfoItem label="Username" value={myProfile?.userName ?? "_"} />
-          </Grid>
-
-          <Grid item xs={12} md={6}>
-            <InfoItem label="Email" value={myProfile?.userEmail ?? "_"} />
+            <InfoItem
+              label={t("profile.username")}
+              value={myProfile?.userName ?? "_"}
+            />
           </Grid>
 
           <Grid item xs={12} md={6}>
             <InfoItem
-              label="Last Login"
+              label={t("profile.email")}
+              value={myProfile?.userEmail ?? "_"}
+            />
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <InfoItem
+              label={t("profile.lastLogin")}
               value={convertTime(myProfile?.updatedAt ?? "_")}
             />
           </Grid>
 
           <Grid item xs={12} md={6}>
             <InfoItem
-              label="Account Created"
+              label={t("profile.accountCreated")}
               value={convertTime(myProfile?.createdAt + "") ?? "_"}
             />
           </Grid>

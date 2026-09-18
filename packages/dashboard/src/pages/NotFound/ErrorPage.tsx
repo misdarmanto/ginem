@@ -7,8 +7,10 @@ import {
   Stack,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 export default function ErrorPage() {
+  const { t } = useTranslation();
   const navigation = useNavigate();
   return (
     <Box
@@ -46,20 +48,19 @@ export default function ErrorPage() {
               variant="overline"
               sx={{ letterSpacing: 2, color: "text.secondary" }}
             >
-              ERROR 404
+              {t("notFound.errorLabel")}
             </Typography>
 
             <Typography variant="h4" fontWeight={800}>
-              Page not found
+              {t("notFound.title")}
             </Typography>
 
             <Typography variant="body2" color="text.secondary">
-              The page you&apos;re looking for doesn&apos;t exist, has been
-              moved, or is temporarily unavailable.
+              {t("notFound.description")}
             </Typography>
 
             <Typography variant="caption" color="text.secondary">
-              If you typed the URL manually, please check the spelling.
+              {t("notFound.hint")}
             </Typography>
 
             <Box
@@ -76,7 +77,7 @@ export default function ErrorPage() {
                 onClick={() => navigation("/")}
                 sx={{ borderRadius: 999, px: 3 }}
               >
-                Back to dashboard
+                {t("notFound.backToDashboard")}
               </Button>
             </Box>
           </Stack>

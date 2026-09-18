@@ -9,11 +9,13 @@ import {
   Typography,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useRegisterMutation } from "@/hooks/services";
 import type { RegisterPayload } from "@/services/authService";
 import { ROUTES } from "@/routes/routes";
 
 export default function RegisterView() {
+  const { t } = useTranslation();
   const registerMutation = useRegisterMutation();
   const navigate = useNavigate();
 
@@ -60,26 +62,26 @@ export default function RegisterView() {
         <Card sx={{ width: "100%", p: { xs: 3, sm: 4 } }}>
           <Stack spacing={1} mb={3} textAlign="center">
             <Typography variant="overline" color="primary">
-              Ginem AI
+              {t("common.appName")}
             </Typography>
             <Typography variant="h4" fontWeight={800}>
-              Create account
+              {t("auth.createAccount")}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Register to start using the control panel.
+              {t("auth.registerSubtitle")}
             </Typography>
           </Stack>
 
           <Stack spacing={2}>
             <TextField
-              label="Full name"
+              label={t("auth.fullName")}
               value={userName}
               size="medium"
               fullWidth
               onChange={(e) => setUserName(e.target.value)}
             />
             <TextField
-              label="E-mail"
+              label={t("auth.email")}
               value={userEmail}
               size="medium"
               fullWidth
@@ -88,7 +90,7 @@ export default function RegisterView() {
               onChange={(e) => setUserEmail(e.target.value)}
             />
             <TextField
-              label="Password"
+              label={t("auth.password")}
               value={userPassword}
               size="medium"
               type="password"
@@ -105,7 +107,7 @@ export default function RegisterView() {
               disabled={submitting}
               onClick={handleSubmit}
             >
-              {submitting ? "Creating…" : "Create account"}
+              {submitting ? t("auth.creating") : t("auth.createAccount")}
             </Button>
           </Stack>
 
@@ -116,7 +118,7 @@ export default function RegisterView() {
             sx={{ mt: 3 }}
           >
             <Typography variant="body2" color="text.secondary">
-              Already have an account?
+              {t("auth.alreadyHaveAccount")}
             </Typography>
             <Typography
               variant="body2"
@@ -127,7 +129,7 @@ export default function RegisterView() {
               }}
               onClick={() => navigate(ROUTES.login)}
             >
-              Login here
+              {t("auth.loginHere")}
             </Typography>
           </Stack>
         </Card>

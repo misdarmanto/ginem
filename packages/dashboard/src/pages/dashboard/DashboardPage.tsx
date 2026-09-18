@@ -5,6 +5,7 @@ import Grid from "@mui/material/Grid";
 import Skeleton from "@mui/material/Skeleton";
 import Typography from "@mui/material/Typography";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   useDashboardLogsQuery,
   useDashboardStatsQuery,
@@ -28,40 +29,40 @@ import { ROUTES } from "@/routes/routes";
 
 const statCards: {
   key: keyof DashboardStats;
-  label: string;
-  hint: string;
+  labelKey: string;
+  hintKey: string;
   icon: React.ElementType;
   bg: string;
   fg: string;
 }[] = [
   {
     key: "devices",
-    label: "Devices",
-    hint: "Connected hardware",
+    labelKey: "dashboard.devices",
+    hintKey: "dashboard.devicesHint",
     icon: DeviceHubOutlinedIcon,
     bg: `linear-gradient(145deg, ${brand.mint} 0%, ${brand.mintDeep} 100%)`,
     fg: "#064E3B",
   },
   {
     key: "users",
-    label: "Admins",
-    hint: "Team members",
+    labelKey: "dashboard.admins",
+    hintKey: "dashboard.adminsHint",
     icon: PeopleOutlinedIcon,
     bg: `linear-gradient(145deg, ${brand.coral} 0%, ${brand.coralDeep} 100%)`,
     fg: "#FFFFFF",
   },
   {
     key: "vectorIndexes",
-    label: "Embeddings",
-    hint: "Vector indexes",
+    labelKey: "dashboard.embeddings",
+    hintKey: "dashboard.embeddingsHint",
     icon: StorageOutlinedIcon,
     bg: `linear-gradient(145deg, ${brand.cyan} 0%, ${brand.cyanDeep} 100%)`,
     fg: "#083344",
   },
   {
     key: "schedulerLogs",
-    label: "Schedulers",
-    hint: "Job activity",
+    labelKey: "dashboard.schedulers",
+    hintKey: "dashboard.schedulersHint",
     icon: AccessAlarmIcon,
     bg: `linear-gradient(145deg, ${brand.orange} 0%, #F59E0B 100%)`,
     fg: "#FFFFFF",
@@ -69,6 +70,7 @@ const statCards: {
 ];
 
 export default function DashboardView() {
+  const { t } = useTranslation();
   const {
     data: statsResult,
     isLoading: statsLoading,
@@ -76,7 +78,7 @@ export default function DashboardView() {
   } = useDashboardStatsQuery();
 
   const stats = statsResult ?? null;
-  const error = statsError ? "Failed to load statistics." : null;
+  const error = statsError ? t("dashboard.failedToLoadStats") : null;
 
   const [paginationModel, setPaginationModel] = useState({
     pageSize: 10,
@@ -112,12 +114,12 @@ export default function DashboardView() {
     {
       field: "appLogId",
       width: 90,
-      headerName: "ID",
+      headerName: t("dashboard.columnId"),
     },
     {
       field: "appLogLevel",
       width: 120,
-      headerName: "Level",
+      headerName: t("dashboard.columnLevel"),
       renderCell: (params) => {
         const { label, color } = getLevelChipProps(params.value);
         return (
@@ -129,13 +131,13 @@ export default function DashboardView() {
       field: "appLogMessage",
       flex: 2,
       minWidth: 200,
-      headerName: "Message",
+      headerName: t("dashboard.columnMessage"),
     },
     {
       field: "createdAt",
       flex: 1,
       minWidth: 160,
-      headerName: "Created at",
+      headerName: t("dashboard.columnCreatedAt"),
       valueFormatter: (item) => convertTime(item.value),
     },
   ];
@@ -145,7 +147,7 @@ export default function DashboardView() {
       <BreadCrumberStyle
         navigation={[
           {
-            label: "Dashboard",
+            label: t("nav.dashboard"),
             link: ROUTES.home,
             icon: <IconMenus.dashboard fontSize="small" />,
           },
@@ -153,8 +155,8 @@ export default function DashboardView() {
       />
 
       <PageHeader
-        title="Overview"
-        subtitle="Live stats and recent application logs"
+        title={t("dashboard.overview")}
+        subtitle={t("dashboard.overviewSubtitle")}
       />
 
       {error ? (
@@ -164,7 +166,7 @@ export default function DashboardView() {
       ) : null}
 
       <Grid container spacing={2.5} sx={{ mb: 3 }}>
-        {statCards.map(({ key, label, hint, icon: Icon, bg, fg }) => (
+        {statCards.map(({ key, labelKey, hintKey, icon: Icon, bg, fg }) => (
           <Grid item key={key} xs={12} sm={6} lg={3}>
             <Card
               sx={{
@@ -210,7 +212,7 @@ export default function DashboardView() {
                     variant="caption"
                     sx={{ opacity: 0.85, fontWeight: 600 }}
                   >
-                    {hint}
+                    {t(hintKey)}
                   </Typography>
                 </Stack>
                 {statsLoading ? (
@@ -228,7 +230,7 @@ export default function DashboardView() {
                       fontWeight={700}
                       sx={{ mt: 0.75, opacity: 0.9 }}
                     >
-                      {label}
+                      {t(labelKey)}
                     </Typography>
                   </>
                 )}
@@ -246,7 +248,7 @@ export default function DashboardView() {
           sx={{ mb: 1.5, px: 1 }}
         >
           <QueryStatsOutlinedIcon color="primary" fontSize="small" />
-          <Typography fontWeight={700}>Latest application logs</Typography>
+          <Typography fontWeight={700}>{t("dashboard.latestLogs")}</Typography>
         </Stack>
         <AppDataGrid
           withSurface={false}
