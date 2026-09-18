@@ -9,6 +9,7 @@ import {
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import NotificationsNoneOutlinedIcon from "@mui/icons-material/NotificationsNoneOutlined";
+import { useTranslation } from "react-i18next";
 
 const drawerWidth = { xs: "100%", sm: 420, md: 440 };
 
@@ -18,6 +19,7 @@ interface NotificationPanelProps {
 }
 
 export function NotificationPanel({ open, onClose }: NotificationPanelProps) {
+  const { t } = useTranslation();
   return (
     <Drawer
       anchor="right"
@@ -62,14 +64,18 @@ export function NotificationPanel({ open, onClose }: NotificationPanelProps) {
           </Avatar>
           <Box>
             <Typography variant="subtitle1" fontWeight={700}>
-              Notifikasi
+              {t("notificationsPanel.title")}
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              Pembaruan dan aktivitas terbaru
+              {t("notificationsPanel.subtitle")}
             </Typography>
           </Box>
         </Stack>
-        <IconButton onClick={onClose} size="small" aria-label="Tutup notifikasi">
+        <IconButton
+          onClick={onClose}
+          size="small"
+          aria-label={t("notificationsPanel.close")}
+        >
           <CloseIcon />
         </IconButton>
       </Stack>
@@ -112,7 +118,7 @@ export function NotificationPanel({ open, onClose }: NotificationPanelProps) {
           color="text.secondary"
           sx={{ textAlign: "center" }}
         >
-          Belum ada notifikasi.
+          {t("notificationsPanel.empty")}
         </Typography>
       </Box>
 

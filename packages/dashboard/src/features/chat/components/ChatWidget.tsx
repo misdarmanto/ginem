@@ -15,6 +15,7 @@ import {
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 import CloseIcon from "@mui/icons-material/Close";
 import SendIcon from "@mui/icons-material/Send";
+import { useTranslation } from "react-i18next";
 import { useChatSocket } from "@/hooks/services";
 
 type ChatRole = "user" | "assistant" | "system";
@@ -28,6 +29,7 @@ interface ChatMessage {
 const drawerWidth = { xs: "100%", sm: 420, md: 440 };
 
 export function ChatWidget() {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -96,7 +98,7 @@ export function ChatWidget() {
             zIndex: (theme) => theme.zIndex.drawer + 1,
           }}
         >
-          <Tooltip title="Buka chat">
+          <Tooltip title={t("chat.openChat")}>
             <Paper
               elevation={8}
               onClick={handleOpen}
@@ -147,7 +149,7 @@ export function ChatWidget() {
                     color: "text.secondary",
                   }}
                 >
-                  Ask Ginem
+                  {t("chat.askGinem")}
                 </Typography>
               </Box>
             </Paper>
@@ -199,17 +201,17 @@ export function ChatWidget() {
             </Avatar>
             <Box>
               <Typography variant="subtitle1" fontWeight={700}>
-                Chat Support
+                {t("chat.title")}
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                Tanyakan apa pun tentang Ginem
+                {t("chat.subtitle")}
               </Typography>
             </Box>
           </Stack>
           <IconButton
             onClick={handleClose}
             size="small"
-            aria-label="Tutup chat"
+            aria-label={t("chat.closeChat")}
           >
             <CloseIcon />
           </IconButton>
@@ -231,7 +233,7 @@ export function ChatWidget() {
               color="text.secondary"
               sx={{ textAlign: "center", mt: 4 }}
             >
-              Mulai percakapan dengan mengirim pesan pertama Anda.
+              {t("chat.startConversation")}
             </Typography>
           ) : (
             <Stack spacing={1.25}>
@@ -276,8 +278,8 @@ export function ChatWidget() {
               fullWidth
               placeholder={
                 status === "connecting"
-                  ? "Menghubungkan..."
-                  : "Ketik pesan..."
+                  ? t("chat.connecting")
+                  : t("chat.typeMessage")
               }
               value={input}
               onChange={(e) => setInput(e.target.value)}

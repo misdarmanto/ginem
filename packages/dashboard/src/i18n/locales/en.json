@@ -126,6 +126,45 @@
     "modelChangedSuccess": "Model changed successfully",
     "failedToChangeModel": "Failed to change model"
   },
+  "chat": {
+    "openChat": "Open chat",
+    "askGinem": "Ask Ginem",
+    "title": "Chat Support",
+    "subtitle": "Ask anything about Ginem",
+    "closeChat": "Close chat",
+    "startConversation": "Start a conversation by sending your first message.",
+    "connecting": "Connecting...",
+    "typeMessage": "Type a message..."
+  },
+  "chatPage": {
+    "title": "Ginem Chat",
+    "status": {
+      "connected": "Connected",
+      "connecting": "Connecting...",
+      "disconnected": "Disconnected",
+      "initializing": "Initializing..."
+    },
+    "greeting": "Hello! 👋",
+    "whatCanIHelp": "What would you like to ask?",
+    "introText": "I'm ready to help you control and manage your IoT devices easily through natural language commands.",
+    "typing": "Typing...",
+    "connectingToServer": "Connecting to server...",
+    "waitingForConnection": "Waiting for connection...",
+    "writeYourQuestion": "Write your question here...",
+    "disclaimer": "Ginem is an AI agent that can control IoT devices. Please verify all commands before they are executed.",
+    "suggestedPrompts": {
+      "controlLights": "How do I control the lights in a room?",
+      "howAutomationWorks": "Explain how smart home automation works",
+      "integrableDevices": "What IoT devices can be integrated?",
+      "setupWifi": "How do I set up a device's WiFi connection?"
+    }
+  },
+  "notificationsPanel": {
+    "title": "Notifications",
+    "subtitle": "Latest updates and activity",
+    "close": "Close notifications",
+    "empty": "No notifications yet."
+  },
   "devices": {
     "title": "Devices",
     "subtitle": "Manage your devices",

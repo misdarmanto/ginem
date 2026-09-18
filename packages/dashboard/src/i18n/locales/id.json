@@ -126,6 +126,45 @@
     "modelChangedSuccess": "Model berhasil diubah",
     "failedToChangeModel": "Gagal mengubah model"
   },
+  "chat": {
+    "openChat": "Buka chat",
+    "askGinem": "Tanya Ginem",
+    "title": "Chat Support",
+    "subtitle": "Tanyakan apa pun tentang Ginem",
+    "closeChat": "Tutup chat",
+    "startConversation": "Mulai percakapan dengan mengirim pesan pertama Anda.",
+    "connecting": "Menghubungkan...",
+    "typeMessage": "Ketik pesan..."
+  },
+  "chatPage": {
+    "title": "Ginem Chat",
+    "status": {
+      "connected": "Terhubung",
+      "connecting": "Menghubungkan...",
+      "disconnected": "Terputus",
+      "initializing": "Menginisialisasi..."
+    },
+    "greeting": "Halo! 👋",
+    "whatCanIHelp": "Apa yang ingin Anda tanyakan?",
+    "introText": "Saya siap membantu Anda mengontrol dan mengelola perangkat IoT dengan mudah melalui perintah natural language.",
+    "typing": "Mengetik...",
+    "connectingToServer": "Menghubungkan ke server...",
+    "waitingForConnection": "Tunggu koneksi...",
+    "writeYourQuestion": "Tulis pertanyaan Anda di sini...",
+    "disclaimer": "Ginem adalah AI agent yang dapat mengontrol device IoT. Pastikan semua perintah telah Anda verifikasi sebelum dijalankan.",
+    "suggestedPrompts": {
+      "controlLights": "Bagaimana cara mengontrol lampu di ruangan?",
+      "howAutomationWorks": "Jelaskan cara kerja smart home automation",
+      "integrableDevices": "Apa saja device IoT yang bisa diintegrasikan?",
+      "setupWifi": "Bagaimana cara setup koneksi WiFi device?"
+    }
+  },
+  "notificationsPanel": {
+    "title": "Notifikasi",
+    "subtitle": "Pembaruan dan aktivitas terbaru",
+    "close": "Tutup notifikasi",
+    "empty": "Belum ada notifikasi."
+  },
   "devices": {
     "title": "Perangkat",
     "subtitle": "Kelola perangkat Anda",
