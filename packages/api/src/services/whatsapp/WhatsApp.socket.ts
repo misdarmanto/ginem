@@ -22,7 +22,6 @@ type WaVersion = Awaited<
 >['version']
 
 const LOG_PREFIX = '[WhatsappService]'
-const ALLOWED_SENDER_NUMBER = '6281379574223'
 
 export interface WhatsappSocketBindings {
   userId: () => number
@@ -213,10 +212,6 @@ export class WhatsappBaileysSocket {
 
       const chat = msg.key.remoteJid
       if (chat == null || chat === 'status@broadcast') return
-
-      const sender = msg.key.senderPn ?? chat
-      const normalizedSender = sender.replace(/[^0-9]/g, '')
-      if (normalizedSender !== ALLOWED_SENDER_NUMBER) return
 
       // Ignore non-chat/system events (e.g. messageStubType: "Bad MAC").
       if (msg.messageStubType != null) {

@@ -22,7 +22,7 @@
     "@langchain/openai": "^1.5.13",
     "@modelcontextprotocol/sdk": "^1.30.0",
     "@pinecone-database/pinecone": "^2.2.0",
-    "@whiskeysockets/baileys": "^6.6.0",
+    "@whiskeysockets/baileys": "^6.17.16",
     "amqplib": "^0.10.3",
     "axios": "^1.6.2",
     "body-parser": "^1.20.2",
