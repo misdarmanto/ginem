@@ -91,7 +91,17 @@ export class WhatsappBaileysSocket {
       })
       this.bind.setSocket(sock)
 
-      sock.ev.on('creds.update', this.bind.getSaveCreds())
+      sock.ev.on('creds.update', () => {
+        this.bind.getSaveCreds()().catch((error: unknown) => {
+          logger.error(
+            `${LOG_PREFIX} saveCreds failed (${this.bind.userLabel()}): ${String(error)}`
+          )
+          this.bind.setConnectionState('error')
+          this.bind.setLastDisconnectReason(
+            'Failed to persist WhatsApp session to disk — reconnect required'
+          )
+        })
+      })
       sock.ev.on('connection.update', (u) => {
         this.onConnectionChange(u).catch((error) => {
           logger.error(`${LOG_PREFIX} connection.update handler failed: ${String(error)}`)
