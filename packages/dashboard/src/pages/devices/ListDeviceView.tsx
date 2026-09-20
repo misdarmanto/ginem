@@ -214,7 +214,7 @@ export default function ListDeviceView() {
     setDeviceToEdit(row);
     setEditForm({
       deviceName: row?.deviceName ?? "",
-      deviceStatus: row?.deviceStatus ?? "offline",
+      deviceStatus: row?.deviceStatus ?? "online",
       deviceFirmwareVersion: row?.deviceFirmwareVersion ?? "",
       deviceMetadataRoom: typeof meta.room === "string" ? meta.room : "",
       deviceMetadataVoltage:
@@ -253,7 +253,7 @@ export default function ListDeviceView() {
       const body = {
         deviceId: deviceToEdit.deviceId,
         deviceName: editForm.deviceName.trim(),
-        deviceStatus: editForm.deviceStatus || "offline",
+        deviceStatus: editForm.deviceStatus || "online",
         deviceFirmwareVersion:
           editForm.deviceFirmwareVersion.trim() || undefined,
         deviceMetadata,
