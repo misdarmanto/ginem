@@ -87,7 +87,7 @@ services:
     volumes:
       - ./logs:/app/logs
       - ./settings:/app/settings
-      - whatsapp_sessions:/resources/whatsapp/sessions
+      - whatsapp_sessions:/app/resources/whatsapp/sessions
     depends_on:
       mysql:
         condition: service_healthy

@@ -56,7 +56,7 @@ export default function DeviceCard({
 }: DeviceCardProps) {
   const theme = useTheme();
   const { t } = useTranslation();
-  const status = String(device?.deviceStatus ?? "offline");
+  const status = String(device?.deviceStatus ?? "online");
   const statusColor = getStatusColor(status);
   const isOnline = statusColor === "success";
 

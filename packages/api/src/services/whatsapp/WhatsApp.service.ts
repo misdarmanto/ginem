@@ -1,5 +1,5 @@
 import path from 'path'
-import { rm } from 'fs/promises'
+import { mkdir, rm } from 'fs/promises'
 
 import { StatusCodes } from 'http-status-codes'
 import type { WAMessage, WASocket } from '@whiskeysockets/baileys'
@@ -292,13 +292,42 @@ export class WhatsappService {
     await this.baileysSocket.attach()
   }
 
+  /**
+   * Baileys writes creds/pre-keys to disk very frequently. If `authDir` ever
+   * disappears out from under a live session (e.g. something outside the app
+   * removed it), the raw `saveCreds` throws ENOENT and — since it's invoked
+   * as a bare `creds.update` listener — that becomes an unhandled rejection
+   * that silently breaks the session. Recreate the directory once and retry
+   * before giving up, so a transient/external removal self-heals instead of
+   * requiring a full re-pair.
+   */
+  private wrapSaveCreds(saveCreds: AuthBundle['saveCreds']): AuthBundle['saveCreds'] {
+    return async () => {
+      try {
+        await saveCreds()
+      } catch (error) {
+        const isMissingDir =
+          typeof error === 'object' &&
+          error != null &&
+          (error as { code?: string }).code === 'ENOENT'
+        if (!isMissingDir) throw error
+
+        logger.warn(
+          `${LOG_PREFIX} authDir missing on saveCreds (${this.userLabel()}), recreating: ${this.authDir}`
+        )
+        await mkdir(this.authDir, { recursive: true })
+        await saveCreds()
+      }
+    }
+  }
+
   private async loadCredentialsOnce(): Promise<void> {
     if (this.credentialsReady) return
     try {
       const b = await loadBaileys()
       const bundle = await b.useMultiFileAuthState(this.authDir)
       this.auth = bundle.state
-      this.saveCreds = bundle.saveCreds
+      this.saveCreds = this.wrapSaveCreds(bundle.saveCreds)
       this.waVersion = (await b.fetchLatestBaileysVersion()).version
       this.credentialsReady = true
       logger.info(

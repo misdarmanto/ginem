@@ -1,8 +1,4 @@
-import amqp, {
-  type Channel,
-  type ChannelModel,
-  type RecoveringChannelModel
-} from 'amqplib'
+import amqp, { type Channel, type ChannelModel, type Options } from 'amqplib'
 import { StatusCodes } from 'http-status-codes'
 
 import { appConfigs } from '../../configs/appConfig'
@@ -10,7 +6,7 @@ import { AppError } from '../../utilities/AppError'
 import logger from '../../utilities/logger'
 import { LOG_PREFIX } from './constants'
 
-let connection: ChannelModel | RecoveringChannelModel | undefined
+let connection: ChannelModel | undefined
 let channel: Channel | undefined
 let connecting: Promise<Channel> | undefined
 
@@ -30,7 +26,9 @@ export async function getRabbitChannel(): Promise<Channel> {
     const url = getRabbitUrl()
     logger.info(`${LOG_PREFIX} connecting to RabbitMQ`)
 
-    connection = await amqp.connect(url, { recovery: true })
+    // `recovery` enables amqplib's automatic connection recovery (added after this
+    // project's @types/amqplib was published, so it isn't part of `Options.Connect` yet).
+    connection = await amqp.connect(url, { recovery: true } as Options.Connect)
     connection.on('error', (err: Error) => {
       logger.error(`${LOG_PREFIX} connection error: ${String(err)}`)
     })
@@ -40,7 +38,7 @@ export async function getRabbitChannel(): Promise<Channel> {
     })
 
     const ch = await connection.createChannel()
-    ch.on('error', (err) => {
+    ch.on('error', (err: Error) => {
       logger.error(`${LOG_PREFIX} channel error: ${String(err)}`)
     })
     ch.on('close', () => {

@@ -1,9 +1,13 @@
-import { Op } from 'sequelize'
+import { Op, type WhereOptions } from 'sequelize'
 import { pineconeService } from './Pinecone.service'
 import logger from '../../utilities/logger'
 import { StatusCodes } from 'http-status-codes'
 import { Pagination } from '../../utilities/pagination'
-import { IndexingModel, type IndexingSourceType } from '../../models/IndexingModel'
+import {
+  IndexingModel,
+  type IndexingInstance,
+  type IndexingSourceType
+} from '../../models/IndexingModel'
 import { AppError } from '../../utilities/AppError'
 import { type ICreateIndexing, type IFindAllIndexing } from '../../schemas/IndexingSchema'
 
@@ -64,7 +68,7 @@ export class PineconeBackupService {
       }
 
       const result = await IndexingModel.findAndCountAll({
-        where: where as any,
+        where: where as WhereOptions<IndexingInstance>,
         order: [['indexingId', 'DESC']],
         ...(pagination && {
           limit: pager.limit,
