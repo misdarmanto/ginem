@@ -2,9 +2,9 @@ import { type Request, type Response } from 'express'
 import { jest } from '@jest/globals'
 
 export const mockRequest = (
-  body: any = {},
-  params: any = {},
-  query: any = {}
+  body: Record<string, unknown> = {},
+  params: Record<string, unknown> = {},
+  query: Record<string, unknown> = {}
 ): Request => {
   return {
     body,
@@ -16,10 +16,10 @@ export const mockRequest = (
 }
 
 export const mockResponse = (): Response => {
-  const res: Partial<Response | any> = {}
+  const res: Partial<Record<keyof Response, jest.Mock>> = {}
   res.status = jest.fn().mockReturnValue(res)
   res.json = jest.fn().mockReturnValue(res)
   res.send = jest.fn().mockReturnValue(res)
   res.setHeader = jest.fn().mockReturnValue(res)
-  return res as Response
+  return res as unknown as Response
 }

@@ -1,6 +1,6 @@
-interface PaginationDataType {
+interface PaginationDataType<T = unknown> {
   count: number
-  rows: any[]
+  rows: T[]
 }
 
 /**
@@ -31,7 +31,7 @@ class Pagination {
     return (page - 1) * size
   }
 
-  public formatData (data: PaginationDataType) {
+  public formatData <T>(data: PaginationDataType<T>) {
     const { count, rows } = data
 
     const totalPages = this.limit > 0 ? Math.ceil(count / this.limit) : 0
