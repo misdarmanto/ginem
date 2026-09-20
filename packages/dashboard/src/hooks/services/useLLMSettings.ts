@@ -16,7 +16,7 @@ export function useSelectedLLMQuery() {
 }
 
 export function useSelectLLMMutation() {
-  return useServicePostMutation<any, { modelId: string }>(
+  return useServicePostMutation<LLMModel, { modelId: string }>(
     (payload) => llmSettingsService.selectModel(payload.modelId),
     {
       invalidateGetPaths: [LLM_SETTINGS_API.selected],

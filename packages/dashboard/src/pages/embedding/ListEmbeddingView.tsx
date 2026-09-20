@@ -46,7 +46,7 @@ import UploadFileIcon from "@mui/icons-material/UploadFile";
 import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CircularProgress from "@mui/material/CircularProgress";
-import { useAppContext } from "@/context/app.context";
+import { useAppContext } from "@/context/app.context.store";
 import { IIndexing } from "@/types/Indexing";
 import DeleteModalIndexing from "@/features/embedding/components/DeleteModalIndexing";
 

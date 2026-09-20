@@ -46,12 +46,16 @@ export class LLMService {
             StatusCodes.INTERNAL_SERVER_ERROR
           )
         }
+        // `as unknown as BaseChatModel`: langchain ships dual ESM/CJS type declarations for
+        // @langchain/core, and this provider package structurally resolves to the "other"
+        // one under this project's moduleResolution, so TS sees two unrelated BaseChatModel
+        // identities at compile time even though they're the same class at runtime.
         return new ChatDeepSeek({
           model: options?.model ?? 'deepseek-chat',
           temperature,
           maxTokens,
           apiKey
-        })
+        }) as unknown as BaseChatModel
       }
 
       if (provider === 'anthropic') {
@@ -68,7 +72,7 @@ export class LLMService {
           // is deprecated for this model") — omit it and let the API use its default.
           maxTokens,
           apiKey
-        })
+        }) as unknown as BaseChatModel
       }
 
       if (provider !== 'openai') {
@@ -89,7 +93,7 @@ export class LLMService {
         // /v1/chat/completions. Forcing 'none' keeps tool calling on that endpoint working;
         // it's a no-op for non-reasoning models.
         reasoning: { effort: 'none' }
-      })
+      }) as unknown as BaseChatModel
     } catch (serviceError) {
       if (serviceError instanceof AppError) throw serviceError
       logger.error(`[LLMService] create failed: ${String(serviceError)}`)
