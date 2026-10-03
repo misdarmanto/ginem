@@ -13,6 +13,7 @@
     "start": "npm run build && concurrently -n API,DASHBOARD -c blue,green \"npm run start -w packages/api\" \"npm run start -w packages/dashboard\"",
     "build": "npm run build -w packages/api && npm run build -w packages/dashboard",
     "test": "npm run test --workspaces --if-present",
+    "test:run": "npm run test:run --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
     "lint:fix": "npm run lint:fix --workspaces --if-present",
     "clean": "rm -rf node_modules packages/api/node_modules packages/dashboard/node_modules && npm install"

@@ -45,7 +45,6 @@ export function useChatSocket({ enabled = true, onMessage }: UseChatSocketOption
       socket.close();
       socketRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled]);
 
   const sendMessage = useCallback((text: string): boolean => {

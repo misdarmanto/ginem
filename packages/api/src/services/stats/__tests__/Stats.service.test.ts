@@ -37,7 +37,7 @@ describe('StatsService', () => {
   })
 
   it('returns aggregate counts from all models', async () => {
-    ;(DeviceModel.count as jest.Mock).mockResolvedValue(5)
+    (DeviceModel.count as jest.Mock).mockResolvedValue(5)
     ;(UserModel.count as jest.Mock).mockResolvedValue(3)
     ;(IndexingModel.count as jest.Mock).mockResolvedValue(12)
     ;(SchedulerLogModel.count as jest.Mock).mockResolvedValue(7)
@@ -53,7 +53,7 @@ describe('StatsService', () => {
   })
 
   it('wraps unexpected errors', async () => {
-    ;(DeviceModel.count as jest.Mock).mockRejectedValue(new Error('db error'))
+    (DeviceModel.count as jest.Mock).mockRejectedValue(new Error('db error'))
 
     await expect(StatsService.getCounts()).rejects.toMatchObject({
       message: 'Failed to get stats counts',

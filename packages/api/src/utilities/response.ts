@@ -7,15 +7,15 @@ export interface MetaAttributes {
   requestId?: string
 }
 
-export interface ResponseDataAttributes {
+export interface ResponseDataAttributes<T = unknown> {
   success: boolean
   message: string | null
-  data: any
+  data: T | null | undefined
   meta: MetaAttributes
 }
 
-interface ISuccessProps {
-  data?: any
+interface ISuccessProps<T = unknown> {
+  data?: T
   message?: string
   executionTime?: string
   requestId?: string
@@ -37,12 +37,12 @@ const buildMeta = (executionTime?: string, requestId?: string): MetaAttributes =
 }
 
 export const ResponseData = {
-  success: ({
+  success: <T = unknown>({
     data,
     message = 'Request successful',
     executionTime,
     requestId
-  }: ISuccessProps): ResponseDataAttributes => ({
+  }: ISuccessProps<T>): ResponseDataAttributes<T> => ({
     success: true,
     message,
     data,

@@ -30,7 +30,7 @@ export const llmSettingsService = {
   },
 
   selectModel: async (modelId: string) => {
-    const response = await apiClient.post(`${LLM_SETTINGS_API.select}`, {
+    const response = await apiClient.post<LLMModel>(`${LLM_SETTINGS_API.select}`, {
       modelId,
     });
     return response;

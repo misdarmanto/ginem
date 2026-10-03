@@ -30,6 +30,7 @@ import {
   alpha,
   Autocomplete,
   Paper,
+  type PaperProps,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import {
@@ -45,7 +46,7 @@ import {
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
-import { useAppContext } from "@/context/app.context";
+import { useAppContext } from "@/context/app.context.store";
 import { useToken } from "@/hooks/use-token";
 import { IconMenus } from "@/assets/icons";
 import { ColorModeContext } from "@/context/colorMode.context";
@@ -339,8 +340,11 @@ export default function AppLayout() {
     }
   };
 
-  const handleSearchSelect = (_event: React.SyntheticEvent, value: NavItem | null) => {
-    if (value) {
+  const handleSearchSelect = (
+    _event: React.SyntheticEvent,
+    value: NavItem | string | null,
+  ) => {
+    if (value && typeof value !== "string") {
       navigate(value.link);
       setSearch("");
     }
@@ -453,7 +457,7 @@ export default function AppLayout() {
                 onInputChange={(_event, newInputValue) => setSearch(newInputValue)}
                 onKeyDown={(event) => {
                   if (event.key === "Enter" && search.trim()) {
-                    handleSearchSubmit(event as any);
+                    handleSearchSubmit(event as unknown as FormEvent);
                   }
                 }}
                 sx={{
@@ -511,7 +515,7 @@ export default function AppLayout() {
                   >
                     <SearchIcon sx={{ color: "text.secondary", fontSize: 20, flexShrink: 0 }} />
                     <InputBase
-                      {...params.inputProps}
+                      inputProps={params.inputProps}
                       placeholder={t("header.searchPlaceholder")}
                       sx={{
                         flex: 1,
@@ -523,7 +527,7 @@ export default function AppLayout() {
                     />
                   </Box>
                 )}
-                PaperComponent={(props) => (
+                PaperComponent={(props: PaperProps) => (
                   <Paper
                     {...props}
                     sx={{

@@ -3,16 +3,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
-  TextContent,
 } from "@modelcontextprotocol/sdk/types.js";
-
-interface DeviceInfo {
-  id: string;
-  name: string;
-  type: "sensor" | "actuator" | "switch";
-  status: "online" | "offline";
-  lastSeen: string;
-}
 
 interface ToolResult {
   success: boolean;
@@ -301,8 +292,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 // Tool handlers (these would integrate with actual Ginem services)
 
 async function handleListDevices(
-  deviceType: string,
-  status: string
+  _deviceType: string,
+  _status: string
 ): Promise<ToolResult> {
   // TODO: Call DeviceService to get devices
   return {
@@ -345,7 +336,7 @@ async function handleControlDevice(
 
 async function handleGetTelemetry(
   deviceId: string,
-  limit: number = 10
+  _limit: number = 10
 ): Promise<ToolResult> {
   // TODO: Call DeviceLogService to get telemetry data
   return {

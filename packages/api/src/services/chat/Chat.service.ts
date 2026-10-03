@@ -105,11 +105,12 @@ type AgentLike = {
  * Chat layer: LLM + short-term MySQL memory + device tools + Pinecone RAG + optional TTS.
  */
 export class ChatService {
+  // See `resolveAgent` below for why this needs the double cast through `unknown`.
   private static readonly defaultAgent = createAgent({
     model: LLMService.create({ temperature: 0 }),
     tools: deviceTools,
     systemPrompt: DEVICE_CHAT_SYSTEM_PROMPT
-  }) as AgentLike
+  } as unknown as Parameters<typeof createAgent>[0]) as AgentLike
 
   /**
    * Run a chat turn. When `withAudio` is true, synthesizes reply audio via OpenAI TTS.
@@ -143,11 +144,15 @@ export class ChatService {
     if (options?.model == null) {
       return ChatService.defaultAgent
     }
+    // `as Parameters<typeof createAgent>[0]`: langchain ships dual ESM/CJS type
+    // declarations for @langchain/core, so BaseChatModel/tool types coming through
+    // this project's moduleResolution structurally mismatch createAgent's expected
+    // types even though they're the same classes at runtime.
     return createAgent({
       model: options.model,
       tools: deviceTools,
       systemPrompt: DEVICE_CHAT_SYSTEM_PROMPT
-    }) as AgentLike
+    } as unknown as Parameters<typeof createAgent>[0]) as AgentLike
   }
 
   private static resolveMemoryScope(options?: ChatQueryOptions): ChatMemoryScope | null {

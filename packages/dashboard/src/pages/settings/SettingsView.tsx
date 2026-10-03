@@ -27,7 +27,8 @@ import {
 } from "@/hooks/services";
 import { settingsService } from "@/services/settingsService";
 import { useApiErrorHandler } from "@/hooks/api/useApiErrorHandler";
-import { useAppContext } from "@/context/app.context";
+import { useAppContext } from "@/context/app.context.store";
+import type { LLMModel } from "@/types/LLMModel";
 import PageHeader from "@/components/common/PageHeader";
 import BreadCrumberStyle from "@/components/common/Breadcrumb";
 import { IconMenus } from "@/assets/icons";
@@ -67,7 +68,7 @@ export default function SettingsView() {
   const defaultSelectedModel = !selectedError && selectedModel ? selectedModel : models?.items?.[0];
 
   const groupedModels = models?.items ? Object.values(models.items).reduce(
-    (acc: Record<string, any[]>, model: any) => {
+    (acc: Record<string, LLMModel[]>, model: LLMModel) => {
       const provider = model.provider;
       if (!acc[provider]) {
         acc[provider] = [];
@@ -75,7 +76,7 @@ export default function SettingsView() {
       acc[provider].push(model);
       return acc;
     },
-    {} as Record<string, any[]>,
+    {} as Record<string, LLMModel[]>,
   ) : {};
 
 
@@ -289,11 +290,11 @@ export default function SettingsView() {
                       onChange={(e) => handleSelectModel(e.target.value)}
                     >
                       {Object.entries(groupedModels).map(
-                        ([provider, providerModels]: [string, any]) => [
+                        ([provider, providerModels]: [string, LLMModel[]]) => [
                           <MenuItem key={`${provider}-header`} disabled>
                             <strong>{provider}</strong>
                           </MenuItem>,
-                          ...providerModels?.map((model: any) => (
+                          ...providerModels.map((model: LLMModel) => (
                             <MenuItem key={model.id} value={model.id}>
                               {model.name}
                             </MenuItem>

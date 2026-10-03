@@ -2,7 +2,7 @@ import axios from 'axios'
 import crypto from 'crypto'
 import logger from '../../utilities/logger'
 import { StatusCodes } from 'http-status-codes'
-import { Pinecone } from '@pinecone-database/pinecone'
+import { Pinecone, type IndexModel } from '@pinecone-database/pinecone'
 import { appConfigs } from '../../configs/appConfig'
 import { AppError } from '../../utilities/AppError'
 import { type ICreateIndexing } from '../../schemas/IndexingSchema'
@@ -22,6 +22,14 @@ interface PineconeVectorMetadata {
   content: string
   source: string
   [key: string]: string
+}
+
+interface OpenAIEmbeddingItem {
+  embedding: number[]
+}
+
+interface OpenAIEmbeddingsResponse {
+  data: OpenAIEmbeddingItem[]
 }
 
 class PineconeService {
@@ -96,7 +104,7 @@ class PineconeService {
         ? this.indexDimension
         : undefined
 
-    const resp = await axios.post(
+    const resp = await axios.post<OpenAIEmbeddingsResponse>(
       'https://api.openai.com/v1/embeddings',
       {
         model,
@@ -110,7 +118,7 @@ class PineconeService {
       }
     )
 
-    const embeddings = resp.data?.data?.map((d: any) => d.embedding) as unknown
+    const embeddings = resp.data?.data?.map((d) => d.embedding) as unknown
     if (!Array.isArray(embeddings)) {
       throw new AppError(
         'Failed to generate embeddings',
@@ -132,33 +140,32 @@ class PineconeService {
     return embeddedVectors
   }
 
+  private static extractIndexDimension(indexModel: IndexModel): number | null {
+    return typeof indexModel.dimension === 'number' ? indexModel.dimension : null
+  }
+
   private async getIndex() {
     const client = await this.getClient()
     try {
       const indexModel = await client.describeIndex(this.indexName)
-      this.indexDimension =
-        typeof (indexModel as any)?.dimension === 'number'
-          ? (indexModel as any).dimension
-          : typeof (indexModel as any)?.spec?.dimension === 'number'
-            ? (indexModel as any).spec.dimension
-            : null
-      return client.index<PineconeVectorMetadata>({ host: indexModel.host })
+      this.indexDimension = PineconeService.extractIndexDimension(indexModel)
+      return client
+        .index<PineconeVectorMetadata>(this.indexName, indexModel.host)
+        .namespace(this.namespace)
     } catch (error) {
       // Help with configuration issues (wrong index name).
       const indexList = await client.listIndexes()
-      const available = indexList?.indexes?.map((i: any) => i.name).filter(Boolean) ?? []
+      const available =
+        indexList?.indexes?.map((i) => i.name).filter(Boolean) ?? []
 
       // Auto-fallback if there's exactly one index.
       if (available.length === 1) {
         this.indexName = available[0]
         const indexModel = await client.describeIndex(this.indexName)
-        this.indexDimension =
-          typeof (indexModel as any)?.dimension === 'number'
-            ? (indexModel as any).dimension
-            : typeof (indexModel as any)?.spec?.dimension === 'number'
-              ? (indexModel as any).spec.dimension
-              : null
-        return client.index<PineconeVectorMetadata>({ host: indexModel.host })
+        this.indexDimension = PineconeService.extractIndexDimension(indexModel)
+        return client
+          .index<PineconeVectorMetadata>(this.indexName, indexModel.host)
+          .namespace(this.namespace)
       }
 
       logger.error(
@@ -203,16 +210,13 @@ class PineconeService {
           }
         })
 
-        await index.upsert({ records, namespace: this.namespace })
+        await index.upsert(records)
 
         // Verify at least one record is readable right after upsert.
         // This helps detect misconfigured namespace/index.
         const first = records[0]
         if (first?.id != null && first.id !== '') {
-          const fetched = await index.fetch({
-            ids: [first.id],
-            namespace: this.namespace
-          })
+          const fetched = await index.fetch([first.id])
           const found = fetched?.records?.[first.id] != null
           logger.info(
             `[PineconeService] upsert verify -> index=${this.indexName}, namespace=${this.namespace}, id=${first.id.slice(0, 10)}..., found=${found}`
@@ -247,8 +251,7 @@ class PineconeService {
         const result = await index.query({
           vector,
           topK: limit,
-          includeMetadata: true,
-          namespace: this.namespace
+          includeMetadata: true
         })
 
         const matches = result.matches ?? []
@@ -294,11 +297,11 @@ class PineconeService {
       const index = await this.getIndex()
       const id = PineconeService.sha256(`${source ?? ''}:${content}`)
 
-      const fetched = await index.fetch({ ids: [id], namespace: this.namespace })
+      const fetched = await index.fetch([id])
       const hasRecord = fetched?.records?.[id] != null
       if (!hasRecord) return { deleted: 0 }
 
-      await index.deleteOne({ id, namespace: this.namespace })
+      await index.deleteOne(id)
       return { deleted: 1 }
     } catch (error) {
       if (error instanceof AppError) throw error

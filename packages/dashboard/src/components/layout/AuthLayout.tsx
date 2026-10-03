@@ -1,5 +1,5 @@
 import { Outlet } from "react-router-dom";
-import { useAppContext } from "@/context/app.context";
+import { useAppContext } from "@/context/app.context.store";
 import { Alert, AlertTitle, Snackbar, Stack } from "@mui/material";
 
 export default function AuthLayout() {
