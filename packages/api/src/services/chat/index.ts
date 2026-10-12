@@ -18,3 +18,9 @@ export {
   type ChatAudioPayload,
   type TtsAudioFormat
 } from './TTS.service'
+export {
+  VoiceSessionService,
+  VOICE_TOOL_NAME,
+  buildVoiceSessionConfig,
+  type VoiceClientSecret
+} from './VoiceSession.service'

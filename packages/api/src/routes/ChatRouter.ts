@@ -13,6 +13,8 @@ ChatRoute.get(
   ChatController.ttsPreview
 )
 
+ChatRoute.post('/voice/session', ChatController.createVoiceSession)
+
 ChatRoute.post('/', MiddleWares.validate({ body: chatSchema }), ChatController.query)
 
 export default ChatRoute

@@ -105,6 +105,43 @@
 
 /**
  * @swagger
+ * /api/v1/chat/voice/session:
+ *   post:
+ *     summary: Create a realtime voice session
+ *     description: |
+ *       Mints a short-lived OpenAI Realtime client secret. The browser uses it to open a
+ *       WebRTC connection straight to OpenAI, so the server API key never leaves the backend.
+ *       The voice model delegates device, rule and knowledge questions to the chat agent
+ *       through the `ask_assistant` tool (browser calls POST /api/v1/chat).
+ *     tags: [Chat]
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Ephemeral client secret
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     clientSecret:
+ *                       type: string
+ *                     expiresAt:
+ *                       type: integer
+ *                       description: Unix time in seconds
+ *                     model:
+ *                       type: string
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Failed to create the voice session
+ */
+
+/**
+ * @swagger
  * /api/v1/chat:
  *   post:
  *     summary: Send message to chat agent
