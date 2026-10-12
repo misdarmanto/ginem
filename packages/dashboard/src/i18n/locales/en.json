@@ -124,7 +124,17 @@
     "selectModel": "Select Model",
     "changingModel": "Changing model...",
     "modelChangedSuccess": "Model changed successfully",
-    "failedToChangeModel": "Failed to change model"
+    "failedToChangeModel": "Failed to change model",
+    "voice": {
+      "title": "AI voice",
+      "subtitle": "Pick the voice used in voice conversations. Takes effect on the next conversation.",
+      "recommended": "Recommended",
+      "playPreview": "Play {{voice}} sample",
+      "stopPreview": "Stop sample",
+      "changedSuccess": "Voice updated",
+      "previewFailed": "Could not play the sample",
+      "note": "Samples use a text-to-speech model and may sound slightly different from the live conversation voice."
+    }
   },
   "chat": {
     "openChat": "Open chat",
@@ -157,6 +167,22 @@
       "howAutomationWorks": "Explain how smart home automation works",
       "integrableDevices": "What IoT devices can be integrated?",
       "setupWifi": "How do I set up a device's WiFi connection?"
+    },
+    "voice": {
+      "start": "Start voice conversation",
+      "end": "End voice conversation",
+      "mute": "Mute microphone",
+      "unmute": "Unmute microphone",
+      "status": {
+        "idle": "Voice off",
+        "connecting": "Connecting voice...",
+        "listening": "Listening...",
+        "thinking": "Thinking...",
+        "speaking": "Speaking...",
+        "error": "Voice unavailable"
+      },
+      "title": "Voice conversation",
+      "retry": "Try again"
     }
   },
   "notificationsPanel": {

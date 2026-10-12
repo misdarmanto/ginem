@@ -25,7 +25,19 @@ describe('parseTelemetryMetrics', () => {
   })
 })
 
+describe('parseTelemetryMetrics bare numbers', () => {
+  it.each([['28', 28], [28, 28], ['-3.5', -3.5]])('parses %p as metrics.value', (input, n) => {
+    expect(parseTelemetryMetrics(input)).toEqual({ value: n })
+  })
+})
+
 describe('resolveMetricReading', () => {
+  it('does not answer for a different metric when named metrics exist', () => {
+    const metrics = parseTelemetryMetrics({ metric: 'temperature', value: 28 })
+    expect(resolveMetricReading(metrics, 'humidity')).toBeNull()
+    expect(resolveMetricReading({ temperature: 28, humidity: 60, value: 5 }, 'pressure')).toBeNull()
+  })
+
   it('prefers named metric then falls back to value', () => {
     expect(resolveMetricReading({ temperature: 26, value: 1 }, 'temperature')).toBe(26)
     expect(resolveMetricReading({ value: 29 }, 'temperature')).toBe(29)

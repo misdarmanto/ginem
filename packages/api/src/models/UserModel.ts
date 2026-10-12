@@ -9,6 +9,8 @@ export interface IUserAttributes extends IBaseModelFields {
   userEmail: string
   userRole: 'admin' | 'user'
   userOnboardingStatus: 'waiting' | 'completed'
+  /** Preferred realtime voice; null falls back to the configured default. */
+  userVoice?: string | null
 }
 
 export type IUserCreationAttributes = Omit<
@@ -51,6 +53,10 @@ export const UserModel = sequelizeInit.define<UserInstance>(
       type: DataTypes.ENUM('waiting', 'completed'),
       allowNull: true,
       defaultValue: 'waiting'
+    },
+    userVoice: {
+      type: DataTypes.STRING(32),
+      allowNull: true
     }
   },
   {

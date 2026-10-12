@@ -1,9 +1,11 @@
+import { StatusCodes } from 'http-status-codes'
 import { DeviceService } from '../device'
 import { SchedulerLogModel, type SchedulerCategory } from '../../models/SchedulerLogModel'
 import logger from '../../utilities/logger'
 import { DeviceLogService } from '../device'
 import { MQTTService } from '../mqtt/MQTT.service'
-import type { DeviceScheduleJobData } from './deviceSchedule.queue'
+import { AppError } from '../../utilities/AppError'
+import { removeRepeatDeviceScheduleJob, type DeviceScheduleJobData } from './deviceSchedule.queue'
 
 export type ScheduledJobStatus = 'pending' | 'active' | 'completed' | 'failed'
 
@@ -32,6 +34,27 @@ async function recordSchedulerResult(
       e
     )
   }
+}
+
+async function handleMissingDevice (
+  err: unknown,
+  data: DeviceScheduleJobData
+): Promise<boolean> {
+  if (!(err instanceof AppError) || err.statusCode !== StatusCodes.NOT_FOUND) {
+    return false
+  }
+
+  const { jobId, deviceName, category } = data
+  await recordSchedulerResult(jobId, 'failed', category, undefined, err.message)
+
+  if (category === 'repeat') {
+    await removeRepeatDeviceScheduleJob(jobId)
+  }
+
+  logger.warn(
+    `[DeviceScheduleJobs] Device "${deviceName}" no longer exists, dropped job ${jobId}`
+  )
+  return true
 }
 
 export async function executeActuatorJob(data: DeviceScheduleJobData): Promise<void> {
@@ -84,6 +107,7 @@ export async function executeActuatorJob(data: DeviceScheduleJobData): Promise<v
       `[DeviceScheduleJobs] Actuator job ${jobId} (${category}) executed: ${deviceName} -> ${state}`
     )
   } catch (err) {
+    if (await handleMissingDevice(err, data)) return
     const error = err instanceof Error ? err.message : String(err)
     await recordSchedulerResult(jobId, 'failed', category, undefined, error)
     logger.error(`[DeviceScheduleJobs] Actuator job ${jobId} failed:`, err)
@@ -117,6 +141,7 @@ export async function executeSensorDataJob(data: DeviceScheduleJobData): Promise
       `[DeviceScheduleJobs] Sensor data job ${jobId} (${category}) executed: ${deviceName}`
     )
   } catch (err) {
+    if (await handleMissingDevice(err, data)) return
     const error = err instanceof Error ? err.message : String(err)
     await recordSchedulerResult(jobId, 'failed', category, undefined, error)
     logger.error(`[DeviceScheduleJobs] Sensor data job ${jobId} failed:`, err)

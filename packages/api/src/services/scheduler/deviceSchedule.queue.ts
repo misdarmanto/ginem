@@ -105,3 +105,14 @@ export async function listRepeatableDeviceScheduleJobs () {
   const q = getDeviceScheduleQueue()
   return await q.getRepeatableJobs()
 }
+
+export async function removeRepeatDeviceScheduleJob (jobId: string): Promise<void> {
+  const q = getDeviceScheduleQueue()
+  const repeatables = await q.getRepeatableJobs()
+
+  await Promise.all(
+    repeatables
+      .filter((entry) => entry.id === jobId || entry.key.includes(jobId))
+      .map(async (entry) => await q.removeRepeatableByKey(entry.key))
+  )
+}

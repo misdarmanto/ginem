@@ -41,6 +41,10 @@ export const appConfigs = {
     model: process.env.OPENAI_TTS_MODEL ?? 'tts-1-hd',
     voice: process.env.OPENAI_TTS_VOICE ?? 'nova'
   },
+  realtime: {
+    model: process.env.OPENAI_REALTIME_MODEL ?? 'gpt-realtime-2.1-mini',
+    voice: process.env.OPENAI_REALTIME_VOICE ?? 'marin'
+  },
   pinecone: {
     apiKey: process.env.PINECONE_API_KEY,
     indexName: process.env.PINECONE_INDEX_NAME,

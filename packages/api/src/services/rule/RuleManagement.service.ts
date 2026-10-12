@@ -161,7 +161,17 @@ export class RuleManagementService {
         where: { deleted: 0, isActive: true },
         include: ruleInclude
       })
-      RuleCache.setRules(rows.map((r) => serializeRule(r)))
+      const cached: CachedRule[] = []
+      for (const row of rows) {
+        try {
+          cached.push(serializeRule(row))
+        } catch (error) {
+          logger.error(
+            `[RuleManagementService] skipped invalid ruleId=${row.ruleId}: ${String(error)}`
+          )
+        }
+      }
+      RuleCache.setRules(cached)
     } catch (error) {
       logger.error(`[RuleManagementService] refreshCache failed: ${String(error)}`)
       throw error

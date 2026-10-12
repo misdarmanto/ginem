@@ -33,6 +33,7 @@ import PageHeader from "@/components/common/PageHeader";
 import BreadCrumberStyle from "@/components/common/Breadcrumb";
 import { IconMenus } from "@/assets/icons";
 import { ROUTES } from "@/routes/routes";
+import VoiceSettingsCard from "@/features/settings/components/VoiceSettingsCard";
 
 export default function SettingsView() {
   const { t } = useTranslation();
@@ -316,6 +317,10 @@ export default function SettingsView() {
               )}
             </CardContent>
           </Card>
+        </Grid>
+
+        <Grid item xs={12}>
+          <VoiceSettingsCard />
         </Grid>
       </Grid>
     </Box>

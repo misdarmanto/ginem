@@ -14,9 +14,12 @@ import {
 } from "@mui/material";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 import CloseIcon from "@mui/icons-material/Close";
+import GraphicEqIcon from "@mui/icons-material/GraphicEq";
 import SendIcon from "@mui/icons-material/Send";
 import { useTranslation } from "react-i18next";
 import { useChatSocket } from "@/hooks/services";
+import { useRealtimeVoice } from "../voice/useRealtimeVoice";
+import VoiceOverlay from "./VoiceOverlay";
 
 type ChatRole = "user" | "assistant" | "system";
 
@@ -46,6 +49,23 @@ export function ChatWidget() {
     ]);
     setSending(false);
   }, []);
+
+  const [caption, setCaption] = useState("");
+
+  const handleVoiceTranscript = useCallback(
+    ({ role, text }: { role: ChatRole; text: string }) => {
+      if (role === "user") setCaption(text);
+      setMessages((prev) => [...prev, { id: `${Date.now()}-${role}-voice`, role, text }]);
+    },
+    [],
+  );
+
+  const voice = useRealtimeVoice({ onTranscript: handleVoiceTranscript });
+
+  const startVoice = () => {
+    setCaption("");
+    void voice.start();
+  };
 
   const { status, sendMessage } = useChatSocket({
     enabled: open,
@@ -98,6 +118,7 @@ export function ChatWidget() {
             zIndex: (theme) => theme.zIndex.drawer + 1,
           }}
         >
+          <Stack direction="row" spacing={1} alignItems="center">
           <Tooltip title={t("chat.openChat")}>
             <Paper
               elevation={8}
@@ -154,7 +175,38 @@ export function ChatWidget() {
               </Box>
             </Paper>
           </Tooltip>
+          <Tooltip title={t("chatPage.voice.start")}>
+            <IconButton
+              onClick={startVoice}
+              aria-label={t("chatPage.voice.start")}
+              sx={{
+                width: 48,
+                height: 48,
+                bgcolor: "primary.main",
+                color: "primary.contrastText",
+                boxShadow: 8,
+                "&:hover": { bgcolor: "primary.dark" },
+              }}
+            >
+              <GraphicEqIcon />
+            </IconButton>
+          </Tooltip>
+          </Stack>
         </Box>
+      )}
+
+      {voice.status !== "idle" && (
+        <VoiceOverlay
+          status={voice.status}
+          muted={voice.muted}
+          error={voice.error}
+          caption={caption}
+          spokenCaption={voice.spokenCaption}
+          analysers={voice.analysers}
+          onToggleMute={voice.toggleMute}
+          onRetry={startVoice}
+          onEnd={voice.stop}
+        />
       )}
 
       {/* Right sidebar — full chat UI */}

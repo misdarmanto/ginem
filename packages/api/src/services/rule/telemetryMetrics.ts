@@ -22,6 +22,11 @@ export function parseTelemetryMetrics(payload: unknown): Record<string, number> 
     }
   }
 
+  if (typeof data === 'number') {
+    if (Number.isFinite(data)) metrics.value = data
+    return metrics
+  }
+
   if (typeof data !== 'object' || data == null || Array.isArray(data)) {
     return metrics
   }
@@ -80,7 +85,10 @@ function extractNumericFields(
   return out
 }
 
-/** Resolve reading for a rule metric; fall back to bare `value` for single-metric sensors. */
+/**
+ * Resolve reading for a rule metric. Falls back to bare `value` only for single-metric
+ * sensors, i.e. when `value` is the sole metric — never to answer for a different named metric.
+ */
 export function resolveMetricReading(
   metrics: Record<string, number>,
   metric: string
@@ -89,7 +97,8 @@ export function resolveMetricReading(
   if (metrics[key] != null && Number.isFinite(metrics[key])) {
     return metrics[key]
   }
-  if (metrics.value != null && Number.isFinite(metrics.value)) {
+  const isSingleMetricSensor = Object.keys(metrics).length === 1 && 'value' in metrics
+  if (isSingleMetricSensor && Number.isFinite(metrics.value)) {
     return metrics.value
   }
   return null
