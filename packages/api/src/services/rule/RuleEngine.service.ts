@@ -131,6 +131,12 @@ export class RuleEngine {
       return
     }
 
+    // Claim the cooldown synchronously so concurrent events cannot double-fire the rule.
+    if (isInCooldown(rule, new Date())) {
+      return
+    }
+    RuleCache.touchLastTriggered(rule.ruleId, new Date())
+
     const actionResults: Array<Record<string, unknown>> = []
     for (const action of rule.actions) {
       const skip = await RuleEngine.shouldSkipAction(action.deviceId, action.state)
