@@ -24,3 +24,9 @@ export {
   buildVoiceSessionConfig,
   type VoiceClientSecret
 } from './VoiceSession.service'
+export {
+  VoicePreferenceService,
+  type VoicePreference
+} from './VoicePreference.service'
+export { VoicePreviewService } from './VoicePreview.service'
+export { VOICE_OPTIONS, isVoiceId, type VoiceOption } from './voiceCatalog'

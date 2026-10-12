@@ -5,6 +5,7 @@ import { StatusCodes } from 'http-status-codes'
 import { appConfigs } from '../../configs/appConfig'
 import { AppError } from '../../utilities/AppError'
 import logger from '../../utilities/logger'
+import { VoicePreferenceService } from './VoicePreference.service'
 
 export const VOICE_TOOL_NAME = 'ask_assistant'
 
@@ -36,7 +37,9 @@ interface ClientSecretResponse {
   expires_at?: number
 }
 
-export function buildVoiceSessionConfig(): Record<string, unknown> {
+export function buildVoiceSessionConfig(
+  voice: string = appConfigs.realtime.voice
+): Record<string, unknown> {
   return {
     expires_after: { anchor: 'created_at', seconds: CLIENT_SECRET_TTL_SECONDS },
     session: {
@@ -73,7 +76,7 @@ export function buildVoiceSessionConfig(): Record<string, unknown> {
             interrupt_response: true
           }
         },
-        output: { voice: appConfigs.realtime.voice }
+        output: { voice }
       }
     }
   }
@@ -84,16 +87,20 @@ function hashUserId(userId: number | string): string {
 }
 
 export class VoiceSessionService {
-  static async createClientSecret(userId?: number | string): Promise<VoiceClientSecret> {
+  static async createClientSecret(userId?: number): Promise<VoiceClientSecret> {
     const apiKey = appConfigs.llm.openAIApiKey
     if (apiKey == null || apiKey === '') {
       throw new AppError('OPENAI_API_KEY is not set', StatusCodes.INTERNAL_SERVER_ERROR)
     }
 
     try {
+      const voice =
+        userId != null
+          ? await VoicePreferenceService.getVoice(userId)
+          : appConfigs.realtime.voice
       const response = await axios.post<ClientSecretResponse>(
         REALTIME_CLIENT_SECRET_URL,
-        buildVoiceSessionConfig(),
+        buildVoiceSessionConfig(voice),
         {
           headers: {
             Authorization: `Bearer ${apiKey}`,

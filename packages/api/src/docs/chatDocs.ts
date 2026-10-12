@@ -142,6 +142,71 @@
 
 /**
  * @swagger
+ * /api/v1/chat/voice/preference:
+ *   get:
+ *     summary: Get the current user's voice and the voices on offer
+ *     tags: [Chat]
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Selected voice and available options
+ *       401:
+ *         description: Unauthorized
+ *   post:
+ *     summary: Choose the voice used in voice conversations
+ *     tags: [Chat]
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [voice]
+ *             properties:
+ *               voice:
+ *                 type: string
+ *                 example: marin
+ *     responses:
+ *       200:
+ *         description: Voice updated
+ *       400:
+ *         description: Unknown voice
+ *       401:
+ *         description: Unauthorized
+ */
+
+/**
+ * @swagger
+ * /api/v1/chat/voice/preview:
+ *   get:
+ *     summary: Short audio sample of a voice
+ *     tags: [Chat]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: voice
+ *         required: true
+ *         schema:
+ *           type: string
+ *         example: marin
+ *     responses:
+ *       200:
+ *         description: MP3 sample
+ *         content:
+ *           audio/mpeg:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       401:
+ *         description: Unauthorized
+ */
+
+/**
+ * @swagger
  * /api/v1/chat:
  *   post:
  *     summary: Send message to chat agent

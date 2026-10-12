@@ -18,6 +18,10 @@ jest.mock('../../../utilities/logger', () => ({
   default: { error: jest.fn(), info: jest.fn(), warn: jest.fn() }
 }))
 
+jest.mock('../VoicePreference.service', () => ({
+  VoicePreferenceService: { getVoice: jest.fn().mockResolvedValue('cedar') }
+}))
+
 jest.mock('axios')
 
 const mockedAxios = axios as jest.Mocked<typeof axios>
@@ -103,6 +107,24 @@ describe('VoiceSessionService.createClientSecret', () => {
     expect(headers.Authorization).toBe('Bearer test-openai-key')
     expect(headers['OpenAI-Safety-Identifier']).toMatch(/^[a-f0-9]{64}$/)
     expect(headers['OpenAI-Safety-Identifier']).not.toBe('7')
+  })
+
+  it("opens the session with the user's chosen voice", async () => {
+    mockedAxios.post.mockResolvedValue({ data: { value: 'ek_test', expires_at: 1 } })
+
+    await VoiceSessionService.createClientSecret(7)
+
+    const body = mockedAxios.post.mock.calls[0][1] as unknown as BuiltConfig
+    expect(body.session.audio.output.voice).toBe('cedar')
+  })
+
+  it('falls back to the configured voice when there is no user', async () => {
+    mockedAxios.post.mockResolvedValue({ data: { value: 'ek_test', expires_at: 1 } })
+
+    await VoiceSessionService.createClientSecret()
+
+    const body = mockedAxios.post.mock.calls[0][1] as unknown as BuiltConfig
+    expect(body.session.audio.output.voice).toBe('marin')
   })
 
   it('rejects an upstream response without a secret', async () => {
