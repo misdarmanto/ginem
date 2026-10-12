@@ -124,7 +124,17 @@
     "selectModel": "Pilih Model",
     "changingModel": "Mengubah model...",
     "modelChangedSuccess": "Model berhasil diubah",
-    "failedToChangeModel": "Gagal mengubah model"
+    "failedToChangeModel": "Gagal mengubah model",
+    "voice": {
+      "title": "Suara AI",
+      "subtitle": "Pilih suara yang dipakai saat percakapan suara. Berlaku mulai percakapan berikutnya.",
+      "recommended": "Rekomendasi",
+      "playPreview": "Putar contoh suara {{voice}}",
+      "stopPreview": "Hentikan contoh suara",
+      "changedSuccess": "Suara berhasil diubah",
+      "previewFailed": "Contoh suara gagal diputar",
+      "note": "Contoh suara memakai model text-to-speech sehingga bisa sedikit berbeda dengan suara saat percakapan langsung."
+    }
   },
   "chat": {
     "openChat": "Buka chat",

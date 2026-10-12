@@ -124,7 +124,17 @@
     "selectModel": "Select Model",
     "changingModel": "Changing model...",
     "modelChangedSuccess": "Model changed successfully",
-    "failedToChangeModel": "Failed to change model"
+    "failedToChangeModel": "Failed to change model",
+    "voice": {
+      "title": "AI voice",
+      "subtitle": "Pick the voice used in voice conversations. Takes effect on the next conversation.",
+      "recommended": "Recommended",
+      "playPreview": "Play {{voice}} sample",
+      "stopPreview": "Stop sample",
+      "changedSuccess": "Voice updated",
+      "previewFailed": "Could not play the sample",
+      "note": "Samples use a text-to-speech model and may sound slightly different from the live conversation voice."
+    }
   },
   "chat": {
     "openChat": "Open chat",

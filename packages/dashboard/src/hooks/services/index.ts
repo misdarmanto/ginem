@@ -41,3 +41,7 @@ export {
   useLLMSettingsService,
 } from "./useLLMSettings";
 export { useLoginMutation, useRegisterMutation } from "./useAuth";
+export {
+  useVoicePreferenceQuery,
+  useSelectVoiceMutation,
+} from "./useVoicePreference";

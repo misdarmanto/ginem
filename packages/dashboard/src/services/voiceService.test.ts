@@ -1,10 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/services/api", () => ({
-  apiClient: { post: vi.fn() },
+  apiClient: { post: vi.fn(), get: vi.fn() },
+  api: { get: vi.fn() },
 }));
 
-import { apiClient } from "@/services/api";
+import { api, apiClient } from "@/services/api";
 import { VOICE_API, voiceService } from "./voiceService";
 
 describe("voiceService", () => {
@@ -37,5 +38,34 @@ describe("voiceService", () => {
     vi.mocked(apiClient.post).mockResolvedValue({});
 
     expect(await voiceService.askAssistant("halo")).toBe("");
+  });
+
+  it("getPreference reads the voice preference", async () => {
+    const preference = { voice: "marin", options: [] };
+    vi.mocked(apiClient.get).mockResolvedValue(preference);
+
+    expect(await voiceService.getPreference()).toEqual(preference);
+    expect(apiClient.get).toHaveBeenCalledWith(VOICE_API.preference);
+  });
+
+  it("selectVoice posts the voice and unwraps the updated preference", async () => {
+    const preference = { voice: "cedar", options: [] };
+    vi.mocked(apiClient.post).mockResolvedValue({ data: preference });
+
+    expect(await voiceService.selectVoice("cedar")).toEqual(preference);
+    expect(apiClient.post).toHaveBeenCalledWith(VOICE_API.preference, {
+      voice: "cedar",
+    });
+  });
+
+  it("fetchPreview downloads the sample as a blob", async () => {
+    const sample = new Blob(["mp3"]);
+    vi.mocked(api.get).mockResolvedValue({ data: sample });
+
+    expect(await voiceService.fetchPreview("marin")).toBe(sample);
+    expect(api.get).toHaveBeenCalledWith(VOICE_API.preview, {
+      params: { voice: "marin" },
+      responseType: "blob",
+    });
   });
 });
