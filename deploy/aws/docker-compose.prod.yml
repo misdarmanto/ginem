@@ -1,0 +1,37 @@
+services:
+  mysql:
+    ports: !reset []
+  redis:
+    ports: !reset []
+  rabbitmq:
+    ports: !reset []
+  app:
+    build:
+      context: .
+      dockerfile: deploy/aws/api.Dockerfile
+    ports: !reset []
+    volumes: !override
+      - whatsapp_sessions:/app/packages/api/resources/whatsapp/sessions
+      - ./logs:/app/packages/api/logs
+  caddy:
+    image: caddy:2-alpine
+    container_name: ta-caddy
+    restart: unless-stopped
+    environment:
+      SITE_HOST: ${SITE_HOST}
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./deploy/aws/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./dashboard-dist:/srv/dashboard:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+    networks:
+      - ta-network
+
+volumes:
+  caddy_data:
+  caddy_config:

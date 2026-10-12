@@ -1,0 +1,8 @@
+.git
+.claude
+**/node_modules
+**/build
+**/logs
+dashboard-dist
+.env
+.env.*

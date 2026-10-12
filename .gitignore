@@ -24,3 +24,8 @@ dist-ssr
 *.sln
 *.sw?
 .claude/
+
+# AWS deploy state & secrets
+deploy/aws/.state
+deploy/aws/.env.production
+dashboard-dist
