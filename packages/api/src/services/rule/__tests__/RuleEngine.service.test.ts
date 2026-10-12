@@ -212,4 +212,28 @@ describe('RuleEngine.evaluate', () => {
     expect(DeviceLogService.create).not.toHaveBeenCalled()
     expect(MQTTService.publishActuatorState).not.toHaveBeenCalled()
   })
+
+  it('fires only once when concurrent events arrive for the same rule', async () => {
+    RuleCache.setRules([sampleRule()])
+    const event = { deviceId: 10, metrics: { temperature: 28 }, receivedAt: new Date() }
+
+    await Promise.all([RuleEngine.evaluate(event), RuleEngine.evaluate(event)])
+
+    expect(MQTTService.publishActuatorState).toHaveBeenCalledTimes(1)
+    expect(DeviceLogService.create).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps the cooldown claimed when an action fails', async () => {
+    RuleCache.setRules([sampleRule()])
+    DeviceLogService.create.mockRejectedValueOnce(new Error('db down'))
+    const event = { deviceId: 10, metrics: { temperature: 28 }, receivedAt: new Date() }
+
+    await RuleEngine.evaluate(event)
+    await RuleEngine.evaluate(event)
+
+    expect(DeviceLogService.create).toHaveBeenCalledTimes(1)
+    expect(RuleExecutionLogModel.create).toHaveBeenCalledWith(
+      expect.objectContaining({ ruleId: 1, success: false })
+    )
+  })
 })
