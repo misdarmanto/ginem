@@ -157,6 +157,22 @@
       "howAutomationWorks": "Jelaskan cara kerja smart home automation",
       "integrableDevices": "Apa saja device IoT yang bisa diintegrasikan?",
       "setupWifi": "Bagaimana cara setup koneksi WiFi device?"
+    },
+    "voice": {
+      "start": "Mulai percakapan suara",
+      "end": "Akhiri percakapan suara",
+      "mute": "Matikan mikrofon",
+      "unmute": "Nyalakan mikrofon",
+      "status": {
+        "idle": "Suara mati",
+        "connecting": "Menghubungkan suara...",
+        "listening": "Mendengarkan...",
+        "thinking": "Memikirkan...",
+        "speaking": "Berbicara...",
+        "error": "Suara tidak tersedia"
+      },
+      "title": "Percakapan suara",
+      "retry": "Coba lagi"
     }
   },
   "notificationsPanel": {

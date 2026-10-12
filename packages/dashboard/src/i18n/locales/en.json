@@ -157,6 +157,22 @@
       "howAutomationWorks": "Explain how smart home automation works",
       "integrableDevices": "What IoT devices can be integrated?",
       "setupWifi": "How do I set up a device's WiFi connection?"
+    },
+    "voice": {
+      "start": "Start voice conversation",
+      "end": "End voice conversation",
+      "mute": "Mute microphone",
+      "unmute": "Unmute microphone",
+      "status": {
+        "idle": "Voice off",
+        "connecting": "Connecting voice...",
+        "listening": "Listening...",
+        "thinking": "Thinking...",
+        "speaking": "Speaking...",
+        "error": "Voice unavailable"
+      },
+      "title": "Voice conversation",
+      "retry": "Try again"
     }
   },
   "notificationsPanel": {

@@ -12,6 +12,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import SendIcon from "@mui/icons-material/Send";
+import GraphicEqIcon from "@mui/icons-material/GraphicEq";
 import SmartToyOutlinedIcon from "@mui/icons-material/SmartToyOutlined";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
@@ -20,6 +21,8 @@ import AnalyticsIcon from "@mui/icons-material/Analytics";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import { useTranslation } from "react-i18next";
 import { useChatSocket } from "@/hooks/services";
+import VoiceControls from "@/features/chat/components/VoiceControls";
+import { useRealtimeVoice } from "@/features/chat/voice/useRealtimeVoice";
 
 type ChatRole = "user" | "assistant" | "system";
 
@@ -73,6 +76,16 @@ export default function ChatView() {
     ]);
     setSending(false);
   }, []);
+
+  const handleVoiceTranscript = useCallback(
+    ({ role, text }: { role: "user" | "assistant"; text: string }) => {
+      setMessages((prev) => [...prev, { id: `${Date.now()}-${role}-voice`, role, text }]);
+    },
+    [],
+  );
+
+  const voice = useRealtimeVoice({ onTranscript: handleVoiceTranscript });
+  const voiceActive = voice.status !== "idle";
 
   const { status, sendMessage } = useChatSocket({
     onMessage: handleIncomingMessage,
@@ -489,6 +502,17 @@ export default function ChatView() {
             : "linear-gradient(180deg, rgba(226,232,240,0.2) 0%, rgba(241,245,249,0.4) 100%)",
         }}
       >
+        {voiceActive && (
+          <Box sx={{ maxWidth: 750, mx: "auto" }}>
+            <VoiceControls
+              status={voice.status}
+              muted={voice.muted}
+              error={voice.error}
+              onToggleMute={voice.toggleMute}
+              onEnd={voice.stop}
+            />
+          </Box>
+        )}
         <Box
           sx={{
             maxWidth: 750,
@@ -550,6 +574,15 @@ export default function ChatView() {
               opacity: status === "open" ? 1 : 0.6,
             }}
           />
+          <IconButton
+            color="primary"
+            onClick={() => void voice.start()}
+            disabled={voiceActive}
+            aria-label={t("chatPage.voice.start")}
+            sx={{ width: 40, height: 40, flexShrink: 0 }}
+          >
+            <GraphicEqIcon fontSize="small" />
+          </IconButton>
           <IconButton
             color="primary"
             onClick={() => handleSend()}
