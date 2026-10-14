@@ -75,6 +75,12 @@ export default function AgentLogsView() {
       valueGetter: (params) => channelLabel(params.row),
     },
     {
+      field: "model",
+      headerName: t("agent.columns.model"),
+      width: 150,
+      valueFormatter: (item) => item.value ?? "—",
+    },
+    {
       field: "status",
       headerName: t("agent.columns.status"),
       width: 140,

@@ -99,6 +99,7 @@ const rows = [
     requestId: "req-2",
     command: "tolong hidupkan",
     status: "clarification",
+    model: null,
     clientLatencyMs: null,
     serverLatencyMs: 3500,
     inputTokens: null,
@@ -135,6 +136,13 @@ describe("AgentLogsView", () => {
     expect(screen.getByText("14.05 s")).toBeInTheDocument();
     expect(screen.getByText("11.094")).toBeInTheDocument();
     expect(screen.getByText("$0.0214")).toBeInTheDocument();
+  });
+
+  it("shows which model answered each command, with a dash when none did", () => {
+    renderPage();
+
+    expect(screen.getByText("gpt-4o")).toBeInTheDocument();
+    expect(screen.getAllByText("—").length).toBeGreaterThan(0);
   });
 
   it("falls back to the server latency and dashes when the browser or tokens are unknown", () => {

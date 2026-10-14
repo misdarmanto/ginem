@@ -233,7 +233,8 @@
       "inputTokens": "Input",
       "outputTokens": "Output",
       "totalTokens": "Total",
-      "cost": "Est. cost"
+      "cost": "Est. cost",
+      "model": "Model"
     },
     "filters": {
       "status": "Filter by status",

@@ -233,7 +233,8 @@
       "inputTokens": "Input",
       "outputTokens": "Output",
       "totalTokens": "Total",
-      "cost": "Estimasi biaya"
+      "cost": "Estimasi biaya",
+      "model": "Model"
     },
     "filters": {
       "status": "Filter status",
