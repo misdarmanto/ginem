@@ -128,7 +128,7 @@ export class AgentLogService {
         outputTokens: usage?.outputTokens ?? null,
         totalTokens: usage?.totalTokens ?? null,
         cachedInputTokens: usage?.cachedInputTokens ?? null,
-        estimatedCostUsd: estimateCostUsd(trace?.model, usage),
+        estimatedCostUsd: estimateCostUsd(trace?.model, usage, new Date(timing.receivedAt)),
         queueWaitMs: timing.consumedAt - timing.enqueuedAt,
         contextLatencyMs: trace?.contextLatencyMs ?? null,
         agentLatencyMs: trace?.agentLatencyMs ?? null,

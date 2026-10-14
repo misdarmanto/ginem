@@ -4,7 +4,12 @@ import { createAgent } from 'langchain'
 
 import logger from '../../utilities/logger'
 import { AppError } from '../../utilities/AppError'
-import { DEFAULT_OPENAI_MODEL, LLMService } from '../llm'
+import {
+  DEFAULT_OPENAI_MODEL,
+  LLMModelService,
+  LLMService,
+  type LLMProvider
+} from '../llm'
 import { TTSService, type ChatAudioPayload } from './TTS.service'
 import {
   ChatMemoryService,
@@ -69,6 +74,13 @@ export interface ChatToolResultTrace {
 }
 
 const TOOL_OUTPUT_MAX_CHARS = 500
+const KNOWN_PROVIDERS: readonly LLMProvider[] = ['openai', 'deepseek', 'anthropic']
+
+interface ResolvedAgent {
+  agent: AgentLike
+  /** Id of the model behind the agent, recorded in the agent log. */
+  model: string
+}
 const CUSTOM_MODEL_LABEL = 'custom'
 
 export interface ChatQueryTrace {
@@ -162,19 +174,71 @@ export class ChatService {
     }
   }
 
-  private static resolveAgent(options?: ChatQueryOptions): AgentLike {
-    if (options?.model == null) {
-      return ChatService.defaultAgent
+  /** Agents already built for a model chosen in Settings, so each is created once. */
+  private static readonly agentsByModel = new Map<string, AgentLike>()
+
+  /**
+   * The model picked in Settings, or null to use the default: nothing selected, an unknown
+   * provider, or the lookup failed. A broken Settings row must not take chat down.
+   */
+  private static async selectedModel(): Promise<{
+    id: string
+    provider: LLMProvider
+  } | null> {
+    try {
+      const row = await LLMModelService.getSelectedModel()
+      const provider = row.provider.toLowerCase()
+      const known = KNOWN_PROVIDERS.find((candidate) => candidate === provider)
+      if (known == null) {
+        logger.warn(`[ChatService] unknown provider "${row.provider}" for model ${row.id}`)
+        return null
+      }
+      return { id: row.id, provider: known }
+    } catch (selectionError) {
+      logger.warn(`[ChatService] using default model: ${String(selectionError)}`)
+      return null
     }
-    // `as Parameters<typeof createAgent>[0]`: langchain ships dual ESM/CJS type
-    // declarations for @langchain/core, so BaseChatModel/tool types coming through
-    // this project's moduleResolution structurally mismatch createAgent's expected
-    // types even though they're the same classes at runtime.
-    return createAgent({
-      model: options.model,
-      tools: deviceTools,
-      systemPrompt: DEVICE_CHAT_SYSTEM_PROMPT
-    } as unknown as Parameters<typeof createAgent>[0]) as AgentLike
+  }
+
+  private static async resolveAgent(options?: ChatQueryOptions): Promise<ResolvedAgent> {
+    if (options?.model != null) {
+      // `as Parameters<typeof createAgent>[0]`: langchain ships dual ESM/CJS type
+      // declarations for @langchain/core, so BaseChatModel/tool types coming through
+      // this project's moduleResolution structurally mismatch createAgent's expected
+      // types even though they're the same classes at runtime.
+      return {
+        model: CUSTOM_MODEL_LABEL,
+        agent: createAgent({
+          model: options.model,
+          tools: deviceTools,
+          systemPrompt: DEVICE_CHAT_SYSTEM_PROMPT
+        } as unknown as Parameters<typeof createAgent>[0]) as AgentLike
+      }
+    }
+
+    const selected = await ChatService.selectedModel()
+    if (
+      selected == null ||
+      (selected.provider === 'openai' && selected.id === DEFAULT_OPENAI_MODEL)
+    ) {
+      return { agent: ChatService.defaultAgent, model: DEFAULT_OPENAI_MODEL }
+    }
+
+    const key = `${selected.provider}:${selected.id}`
+    let agent = ChatService.agentsByModel.get(key)
+    if (agent == null) {
+      agent = createAgent({
+        model: LLMService.create({
+          provider: selected.provider,
+          model: selected.id,
+          temperature: 0
+        }),
+        tools: deviceTools,
+        systemPrompt: DEVICE_CHAT_SYSTEM_PROMPT
+      } as unknown as Parameters<typeof createAgent>[0]) as AgentLike
+      ChatService.agentsByModel.set(key, agent)
+    }
+    return { agent, model: selected.id }
   }
 
   private static resolveMemoryScope(options?: ChatQueryOptions): ChatMemoryScope | null {
@@ -225,7 +289,7 @@ export class ChatService {
       currentContent = `[Context from knowledge base]\n${contextBlock}\n\n[User question]\n${userMessage}`
     }
 
-    const agent = ChatService.resolveAgent(options)
+    const { agent, model } = await ChatService.resolveAgent(options)
     const startedAt = Date.now()
     const contextLatencyMs = startedAt - contextStartedAt
     const result = await agent.invoke({
@@ -257,7 +321,7 @@ export class ChatService {
         toolResults: ChatService.extractToolResults(result.messages ?? []),
         agentLatencyMs,
         contextLatencyMs,
-        model: options.model == null ? DEFAULT_OPENAI_MODEL : CUSTOM_MODEL_LABEL,
+        model,
         ...(tokenUsage != null && { tokenUsage })
       }
     }

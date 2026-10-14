@@ -11,6 +11,16 @@ export type LLMProvider = 'openai' | 'deepseek' | 'anthropic'
 
 export const DEFAULT_OPENAI_MODEL = 'gpt-4o'
 
+/**
+ * o-series reasoning models (o1, o3, ...) reject 'none' (they accept low, medium and high) and
+ * reject any explicit temperature.
+ */
+const OPENAI_REASONING_MODEL = /^o\d/
+
+function openAIReasoning(model: string): { effort: 'none' | 'low' } {
+  return { effort: OPENAI_REASONING_MODEL.test(model) ? 'low' : 'none' }
+}
+
 export interface LLMCreateOptions {
   /** Defaults to openai (production path). */
   provider?: LLMProvider
@@ -85,16 +95,18 @@ export class LLMService {
       }
 
       const apiKey = options?.apiKey ?? appConfigs.llm?.openAIApiKey
+      const model = options?.model ?? DEFAULT_OPENAI_MODEL
       return new ChatOpenAI({
-        model: options?.model ?? DEFAULT_OPENAI_MODEL,
-        temperature,
+        model,
+        temperature: OPENAI_REASONING_MODEL.test(model) ? undefined : temperature,
         maxTokens,
         apiKey,
         // LangChain auto-detects any "gpt-5*" model name as a reasoning model and may
         // send a reasoning_effort the API rejects when function tools are used on
         // /v1/chat/completions. Forcing 'none' keeps tool calling on that endpoint working;
-        // it's a no-op for non-reasoning models.
-        reasoning: { effort: 'none' }
+        // it's a no-op for non-reasoning models. The o-series is the exception: it does not
+        // accept 'none', so it gets the lowest effort it supports.
+        reasoning: openAIReasoning(model)
       }) as unknown as BaseChatModel
     } catch (serviceError) {
       if (serviceError instanceof AppError) throw serviceError

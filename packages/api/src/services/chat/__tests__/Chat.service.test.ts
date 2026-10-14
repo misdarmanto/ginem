@@ -5,6 +5,8 @@ import { ChatService } from '../Chat.service'
 import { ChatMemoryService } from '../ChatMemory.service'
 import { pineconeService } from '../../rag'
 import { TTSService } from '../TTS.service'
+import { LLMModelService, LLMService } from '../../llm'
+import { AppError } from '../../../utilities/AppError'
 
 jest.mock('langchain', () => ({
   createAgent: jest.fn(() => ({
@@ -14,7 +16,8 @@ jest.mock('langchain', () => ({
 
 jest.mock('../../llm', () => ({
   DEFAULT_OPENAI_MODEL: 'gpt-4o',
-  LLMService: { create: jest.fn(() => ({ id: 'default-model' })) }
+  LLMService: { create: jest.fn(() => ({ id: 'default-model' })) },
+  LLMModelService: { getSelectedModel: jest.fn() }
 }))
 
 jest.mock('../TTS.service', () => ({
@@ -50,10 +53,16 @@ const defaultInvoke = createAgentMock.mock.results[0].value.invoke as jest.Mock
 const mockedPinecone = pineconeService as jest.Mocked<typeof pineconeService>
 const mockedTTS = TTSService as jest.Mocked<typeof TTSService>
 const mockedMemory = ChatMemoryService as jest.Mocked<typeof ChatMemoryService>
+const mockedGetSelectedModel = LLMModelService.getSelectedModel as jest.Mock
+const mockedLLMCreate = LLMService.create as jest.Mock
+const builtAgents = (ChatService as unknown as { agentsByModel: Map<string, unknown> })
+  .agentsByModel
 
 describe('ChatService', () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    builtAgents.clear()
+    mockedGetSelectedModel.mockRejectedValue(new Error('no model selected'))
     mockedPinecone.search.mockResolvedValue([])
     mockedMemory.getRecent.mockResolvedValue([])
     mockedMemory.appendTurn.mockResolvedValue(undefined)
@@ -252,6 +261,119 @@ describe('ChatService', () => {
 
     expect(byDefault.trace?.model).toBe('gpt-4o')
     expect(overridden.trace?.model).toBe('custom')
+  })
+
+  describe('model chosen in Settings', () => {
+    const select = (id: string, provider: string) =>
+      mockedGetSelectedModel.mockResolvedValue({ id, provider })
+    const lastAgentInvoke = () =>
+      createAgentMock.mock.results.at(-1)?.value.invoke as jest.Mock
+
+    beforeEach(() => {
+      createAgentMock.mockImplementation(() => ({
+        invoke: jest.fn().mockResolvedValue({ messages: [{ content: 'ok' }] })
+      }))
+    })
+
+    it('builds the agent from the selected model and answers with it', async () => {
+      select('gpt-4o-mini', 'OpenAI')
+
+      const result = await ChatService.query('Halo', { captureTrace: true })
+
+      expect(mockedLLMCreate).toHaveBeenCalledWith({
+        provider: 'openai',
+        model: 'gpt-4o-mini',
+        temperature: 0
+      })
+      expect(defaultInvoke).not.toHaveBeenCalled()
+      expect(lastAgentInvoke()).toHaveBeenCalled()
+      expect(result.trace?.model).toBe('gpt-4o-mini')
+    })
+
+    it.each([
+      ['DeepSeek', 'deepseek'],
+      ['Anthropic', 'anthropic'],
+      ['OpenAI', 'openai']
+    ])('maps the %s provider name', async (label, provider) => {
+      select('some-model', label)
+
+      await ChatService.query('Halo')
+
+      expect(mockedLLMCreate).toHaveBeenCalledWith(expect.objectContaining({ provider }))
+    })
+
+    it('builds each model once and reuses it', async () => {
+      select('gpt-4o-mini', 'OpenAI')
+      const before = createAgentMock.mock.calls.length
+
+      await ChatService.query('Satu')
+      await ChatService.query('Dua')
+
+      expect(createAgentMock.mock.calls.length - before).toBe(1)
+    })
+
+    it('builds a separate agent when the selection changes', async () => {
+      select('gpt-4o-mini', 'OpenAI')
+      await ChatService.query('Satu')
+      select('deepseek-chat', 'DeepSeek')
+
+      const result = await ChatService.query('Dua', { captureTrace: true })
+
+      expect(result.trace?.model).toBe('deepseek-chat')
+      expect(mockedLLMCreate).toHaveBeenCalledTimes(2)
+    })
+
+    it('uses the built-in default agent when the selected model is the default', async () => {
+      select('gpt-4o', 'OpenAI')
+      const before = createAgentMock.mock.calls.length
+
+      const result = await ChatService.query('Halo', { captureTrace: true })
+
+      expect(createAgentMock.mock.calls.length).toBe(before)
+      expect(defaultInvoke).toHaveBeenCalled()
+      expect(result.trace?.model).toBe('gpt-4o')
+    })
+
+    it('falls back to the default when nothing is selected or the lookup fails', async () => {
+      mockedGetSelectedModel.mockRejectedValue(AppError.notFound('Selected model not found'))
+
+      const result = await ChatService.query('Halo', { captureTrace: true })
+
+      expect(defaultInvoke).toHaveBeenCalled()
+      expect(result.trace?.model).toBe('gpt-4o')
+    })
+
+    it('falls back to the default for a provider it does not know', async () => {
+      select('mystery', 'Acme')
+
+      const result = await ChatService.query('Halo', { captureTrace: true })
+
+      expect(mockedLLMCreate).not.toHaveBeenCalled()
+      expect(result.trace?.model).toBe('gpt-4o')
+    })
+
+    it('reports a missing API key instead of silently switching models', async () => {
+      select('claude-opus-5', 'Anthropic')
+      mockedLLMCreate.mockImplementationOnce(() => {
+        throw new AppError('Anthropic API key is not configured', 500)
+      })
+
+      await expect(ChatService.query('Halo')).rejects.toMatchObject({
+        message: 'Anthropic API key is not configured'
+      })
+    })
+
+    it('still lets an evaluation override win over the Settings choice', async () => {
+      select('gpt-4o-mini', 'OpenAI')
+
+      const result = await ChatService.query('Halo', {
+        captureTrace: true,
+        model: { id: 'override' } as never
+      })
+
+      expect(mockedGetSelectedModel).not.toHaveBeenCalled()
+      expect(result.trace?.model).toBe('custom')
+    })
   })
 
   describe('extractToolResults', () => {

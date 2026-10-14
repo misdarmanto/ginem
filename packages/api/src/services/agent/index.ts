@@ -5,4 +5,10 @@ export {
   type AgentViewer,
   type RecordExecutionInput
 } from './AgentLog.service'
-export { estimateCostUsd, LLM_PRICING } from './llmPricing'
+export {
+  estimateCostUsd,
+  isDeepSeekPeak,
+  pricingFor,
+  PRICED_MODEL_IDS,
+  type ModelPricing
+} from './llmPricing'
