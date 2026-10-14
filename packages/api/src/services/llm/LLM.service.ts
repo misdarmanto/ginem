@@ -9,6 +9,8 @@ import logger from '../../utilities/logger'
 
 export type LLMProvider = 'openai' | 'deepseek' | 'anthropic'
 
+export const DEFAULT_OPENAI_MODEL = 'gpt-4o'
+
 export interface LLMCreateOptions {
   /** Defaults to openai (production path). */
   provider?: LLMProvider
@@ -84,7 +86,7 @@ export class LLMService {
 
       const apiKey = options?.apiKey ?? appConfigs.llm?.openAIApiKey
       return new ChatOpenAI({
-        model: options?.model ?? 'gpt-4o',
+        model: options?.model ?? DEFAULT_OPENAI_MODEL,
         temperature,
         maxTokens,
         apiKey,

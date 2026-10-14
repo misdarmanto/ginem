@@ -14,7 +14,7 @@ const HEARTBEAT_INTERVAL_MS = 30_000
  * WebSocket message contract (JSON text frames both ways).
  *
  * Client -> Server:
- *   { "requestId"?: string, "message": string, "sessionId"?: string, "withAudio"?: boolean }
+ *   { "requestId"?: string, "message": string, "sessionId"?: string, "channel"?: "chat" | "voice", "withAudio"?: boolean }
  *
  * Server -> Client:
  *   Connection ack   { "type": "connected", "userId": number }
@@ -29,6 +29,7 @@ const chatWsMessageSchema = z.object({
   requestId: z.string().min(1).max(191).optional(),
   message: z.string().min(1).max(2000),
   sessionId: z.string().min(1).max(191).optional(),
+  channel: z.enum(['chat', 'voice']).optional(),
   withAudio: z.boolean().optional().default(false)
 })
 
@@ -61,6 +62,7 @@ function sendError(
 }
 
 async function handleMessage(ws: WebSocket, userId: number, raw: string): Promise<void> {
+  const receivedAt = Date.now()
   let parsed: unknown
   try {
     parsed = JSON.parse(raw)
@@ -79,11 +81,14 @@ async function handleMessage(ws: WebSocket, userId: number, raw: string): Promis
     return
   }
 
-  const { requestId, message, sessionId, withAudio } = result.data
+  const { requestId, message, sessionId, channel, withAudio } = result.data
 
   try {
     const reply = await ChatMessageBroker.requestChat(message, {
       source: 'web',
+      receivedAt,
+      ...(requestId != null ? { requestId } : {}),
+      ...(channel != null ? { channel } : {}),
       withAudio,
       userId,
       sessionId: sessionId ?? `web:${userId}`

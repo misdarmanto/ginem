@@ -2,6 +2,7 @@ import { StatusCodes } from 'http-status-codes'
 
 import { ChatMessageBroker } from '../ChatMessageBroker.service'
 import { ChatService } from '../../chat'
+import { AgentLogService } from '../../agent'
 import * as rabbitConnection from '../connection'
 
 jest.mock('../../../utilities/logger', () => ({
@@ -13,6 +14,10 @@ jest.mock('../../chat', () => ({
   ChatService: {
     query: jest.fn()
   }
+}))
+
+jest.mock('../../agent', () => ({
+  AgentLogService: { recordExecution: jest.fn().mockResolvedValue(undefined) }
 }))
 
 jest.mock('../connection', () => ({
@@ -32,6 +37,7 @@ jest.mock('../../../configs/appConfig', () => ({
 }))
 
 const mockedChatService = ChatService as jest.Mocked<typeof ChatService>
+const mockedAgentLog = AgentLogService as jest.Mocked<typeof AgentLogService>
 const mockedGetChannel = rabbitConnection.getRabbitChannel as jest.Mock
 
 async function flushMicrotasks(): Promise<void> {
@@ -98,6 +104,53 @@ describe('ChatMessageBroker', () => {
     await expect(pending).resolves.toEqual({ reply: 'Lampu dinyalakan.' })
   })
 
+  it('requestChat carries the client request id, channel and timing in the payload', async () => {
+    const sendToQueue = jest.fn().mockReturnValue(true)
+    mockedGetChannel.mockResolvedValue({
+      assertQueue: jest.fn().mockResolvedValue({ queue: 'amq.gen-reply' }),
+      consume: jest.fn().mockResolvedValue({ consumerTag: 'tag-1' }),
+      sendToQueue,
+      cancel: jest.fn()
+    })
+
+    const pending = ChatMessageBroker.requestChat('Nyalakan lampu', {
+      source: 'web',
+      requestId: 'client-req-1',
+      channel: 'voice',
+      receivedAt: 12_345
+    })
+    pending.catch(() => undefined)
+    await waitForMockCalls(sendToQueue)
+
+    const payload = JSON.parse((sendToQueue.mock.calls[0][1] as Buffer).toString('utf8'))
+    expect(payload).toMatchObject({
+      requestId: 'client-req-1',
+      channel: 'voice',
+      receivedAt: 12_345,
+      source: 'web',
+      message: 'Nyalakan lampu'
+    })
+    expect(payload.enqueuedAt).toBeGreaterThan(12_345)
+  })
+
+  it('requestChat stamps receipt time itself when the caller gives none', async () => {
+    const sendToQueue = jest.fn().mockReturnValue(true)
+    mockedGetChannel.mockResolvedValue({
+      assertQueue: jest.fn().mockResolvedValue({ queue: 'amq.gen-reply' }),
+      consume: jest.fn().mockResolvedValue({ consumerTag: 'tag-1' }),
+      sendToQueue,
+      cancel: jest.fn()
+    })
+
+    const pending = ChatMessageBroker.requestChat('Halo', { source: 'whatsapp' })
+    pending.catch(() => undefined)
+    await waitForMockCalls(sendToQueue)
+
+    const payload = JSON.parse((sendToQueue.mock.calls[0][1] as Buffer).toString('utf8'))
+    expect(payload.receivedAt).toBe(payload.enqueuedAt)
+    expect(payload.requestId).toBeUndefined()
+  })
+
   it('requestChat rejects when broker reply is an error payload', async () => {
     const sendToQueue = jest.fn().mockReturnValue(true)
     let replyHandler: ((msg: unknown) => void) | undefined
@@ -136,52 +189,122 @@ describe('ChatMessageBroker', () => {
     })
   })
 
-  it('consumer path calls ChatService.query for queued work', async () => {
-    mockedChatService.query.mockResolvedValue({ reply: 'ok' })
+  describe('consumer', () => {
+    async function consume(request: Record<string, unknown>): Promise<jest.Mock> {
+      const ack = jest.fn()
+      const sendToQueue = jest.fn().mockReturnValue(true)
+      let queueHandler: ((msg: unknown) => void) | undefined
 
-    const ack = jest.fn()
-    const sendToQueue = jest.fn().mockReturnValue(true)
-    let queueHandler: ((msg: unknown) => void) | undefined
+      mockedGetChannel.mockResolvedValue({
+        consume: jest.fn().mockImplementation(async (_queue, onMessage) => {
+          queueHandler = onMessage
+          return { consumerTag: 'worker-1' }
+        }),
+        sendToQueue,
+        ack,
+        cancel: jest.fn()
+      })
+      await ChatMessageBroker.initialize()
 
-    const channel = {
-      consume: jest.fn().mockImplementation(async (_queue, onMessage) => {
-        queueHandler = onMessage
-        return { consumerTag: 'worker-1' }
-      }),
-      sendToQueue,
-      ack,
-      cancel: jest.fn()
+      queueHandler?.({
+        content: Buffer.from(JSON.stringify(request)),
+        properties: { replyTo: 'amq.gen-reply', correlationId: 'corr-1' }
+      })
+
+      await waitForMockCalls(sendToQueue)
+      await waitForMockCalls(ack)
+      return sendToQueue
     }
 
-    mockedGetChannel.mockResolvedValue(channel)
-    await ChatMessageBroker.initialize()
-
-    const request = {
+    const queued = {
       messageId: 'm3',
       source: 'web',
-      message: 'status lampu'
+      message: 'status lampu',
+      receivedAt: 1_000,
+      enqueuedAt: 1_010
     }
 
-    queueHandler?.({
-      content: Buffer.from(JSON.stringify(request)),
-      properties: {
-        replyTo: 'amq.gen-reply',
-        correlationId: 'corr-1'
+    it('calls ChatService.query with a trace for queued work and replies', async () => {
+      mockedChatService.query.mockResolvedValue({ reply: 'ok' })
+
+      const sendToQueue = await consume(queued)
+
+      expect(mockedChatService.query).toHaveBeenCalledWith('status lampu', {
+        withAudio: false,
+        source: 'web',
+        captureTrace: true
+      })
+      expect(sendToQueue).toHaveBeenCalledWith(
+        'amq.gen-reply',
+        expect.any(Buffer),
+        expect.objectContaining({ correlationId: 'corr-1' })
+      )
+    })
+
+    it('records the executed command, falling back to messageId and the chat channel', async () => {
+      const trace = {
+        toolCalls: [],
+        toolResults: [],
+        agentLatencyMs: 5,
+        contextLatencyMs: 3,
+        model: 'gpt-4o'
       }
+      mockedChatService.query.mockResolvedValue({ reply: 'ok', trace })
+
+      await consume(queued)
+
+      expect(mockedAgentLog.recordExecution).toHaveBeenCalledWith(
+        expect.objectContaining({
+          requestId: 'm3',
+          source: 'web',
+          channel: 'chat',
+          command: 'status lampu',
+          result: { ok: true, reply: 'ok', trace },
+          timing: expect.objectContaining({ receivedAt: 1_000, enqueuedAt: 1_010 })
+        })
+      )
     })
 
-    await waitForMockCalls(sendToQueue)
-    await waitForMockCalls(ack)
+    it('records the client-chosen request id, channel and user', async () => {
+      mockedChatService.query.mockResolvedValue({ reply: 'ok' })
 
-    expect(mockedChatService.query).toHaveBeenCalledWith('status lampu', {
-      withAudio: false,
-      source: 'web'
+      await consume({
+        ...queued,
+        requestId: 'client-req-1',
+        channel: 'voice',
+        userId: 7,
+        sessionId: 'web:7'
+      })
+
+      expect(mockedAgentLog.recordExecution).toHaveBeenCalledWith(
+        expect.objectContaining({
+          requestId: 'client-req-1',
+          channel: 'voice',
+          userId: 7,
+          sessionId: 'web:7'
+        })
+      )
     })
-    expect(sendToQueue).toHaveBeenCalledWith(
-      'amq.gen-reply',
-      expect.any(Buffer),
-      expect.objectContaining({ correlationId: 'corr-1' })
-    )
-    expect(ack).toHaveBeenCalled()
+
+    it('records a failed command when the agent throws', async () => {
+      mockedChatService.query.mockRejectedValue(new Error('agent down'))
+
+      await consume(queued)
+
+      expect(mockedAgentLog.recordExecution).toHaveBeenCalledWith(
+        expect.objectContaining({
+          result: { ok: false, error: 'Failed to process chat message' }
+        })
+      )
+    })
+
+    it('still replies when logging is slow or never finishes', async () => {
+      mockedChatService.query.mockResolvedValue({ reply: 'ok' })
+      mockedAgentLog.recordExecution.mockReturnValue(new Promise(() => undefined))
+
+      const sendToQueue = await consume(queued)
+
+      expect(sendToQueue).toHaveBeenCalled()
+    })
   })
 })

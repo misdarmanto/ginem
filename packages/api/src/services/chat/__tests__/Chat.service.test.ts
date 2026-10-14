@@ -13,6 +13,7 @@ jest.mock('langchain', () => ({
 }))
 
 jest.mock('../../llm', () => ({
+  DEFAULT_OPENAI_MODEL: 'gpt-4o',
   LLMService: { create: jest.fn(() => ({ id: 'default-model' })) }
 }))
 
@@ -183,6 +184,7 @@ describe('ChatService', () => {
       }
     ])
     expect(result.trace?.agentLatencyMs).toBeGreaterThanOrEqual(0)
+    expect(result.trace?.contextLatencyMs).toBeGreaterThanOrEqual(0)
   })
 
   it('sums token usage across every AI message when captureTrace is true', async () => {
@@ -207,7 +209,8 @@ describe('ChatService', () => {
     expect(result.trace?.tokenUsage).toEqual({
       inputTokens: 230,
       outputTokens: 35,
-      totalTokens: 265
+      totalTokens: 265,
+      cachedInputTokens: 0
     })
   })
 
@@ -215,6 +218,116 @@ describe('ChatService', () => {
     const result = await ChatService.query('Nyalakan lampu', { captureTrace: true })
 
     expect(result.trace?.tokenUsage).toBeUndefined()
+  })
+
+  it('counts cached input tokens so cost can use the cheaper rate', async () => {
+    defaultInvoke.mockResolvedValue({
+      messages: [
+        {
+          content: 'ok',
+          usage_metadata: {
+            input_tokens: 1000,
+            output_tokens: 10,
+            total_tokens: 1010,
+            input_token_details: { cache_read: 400 }
+          }
+        }
+      ]
+    })
+
+    const result = await ChatService.query('Halo', { captureTrace: true })
+
+    expect(result.trace?.tokenUsage?.cachedInputTokens).toBe(400)
+  })
+
+  it('names the default model in the trace, and marks an override as custom', async () => {
+    const overrideInvoke = jest.fn().mockResolvedValue({ messages: [{ content: 'ok' }] })
+    createAgentMock.mockReturnValueOnce({ invoke: overrideInvoke })
+
+    const byDefault = await ChatService.query('Halo', { captureTrace: true })
+    const overridden = await ChatService.query('Halo', {
+      captureTrace: true,
+      model: { id: 'override' } as never
+    })
+
+    expect(byDefault.trace?.model).toBe('gpt-4o')
+    expect(overridden.trace?.model).toBe('custom')
+  })
+
+  describe('extractToolResults', () => {
+    const toolMessage = (name: string, content: unknown, extra: object = {}) => ({
+      name,
+      content,
+      tool_call_id: `${name}-call`,
+      ...extra
+    })
+
+    it('reports a tool that returned an error field as not ok', () => {
+      const [result] = ChatService.extractToolResults([
+        toolMessage(
+          'set_actuator_state_by_device_name',
+          '{"error":"Device not found","deviceName":"TV"}'
+        )
+      ])
+
+      expect(result).toMatchObject({
+        callId: 'set_actuator_state_by_device_name-call',
+        name: 'set_actuator_state_by_device_name',
+        ok: false,
+        error: 'Device not found'
+      })
+    })
+
+    it('reports a normal result as ok', () => {
+      const [result] = ChatService.extractToolResults([
+        toolMessage('list_devices', '{"items":[]}')
+      ])
+
+      expect(result).toMatchObject({ name: 'list_devices', ok: true })
+      expect(result.error).toBeUndefined()
+    })
+
+    it('treats plain-text output as ok', () => {
+      const [result] = ChatService.extractToolResults([toolMessage('list_devices', 'no devices')])
+
+      expect(result.ok).toBe(true)
+    })
+
+    it('honours an errored status even without an error field', () => {
+      const [result] = ChatService.extractToolResults([
+        toolMessage('list_devices', 'Error: timeout', { status: 'error' })
+      ])
+
+      expect(result).toMatchObject({ ok: false, error: 'Error: timeout' })
+    })
+
+    it('ignores messages that are not tool outputs', () => {
+      expect(
+        ChatService.extractToolResults([{ content: 'Lampu menyala.' }, { content: '' }])
+      ).toEqual([])
+    })
+
+    it('truncates long output for storage', () => {
+      const [result] = ChatService.extractToolResults([
+        toolMessage('list_devices', 'x'.repeat(5000))
+      ])
+
+      expect(result.output).toHaveLength(500)
+    })
+
+    it('is included in the trace', async () => {
+      defaultInvoke.mockResolvedValue({
+        messages: [
+          toolMessage('set_actuator_state_by_device_name', '{"error":"Device not found"}'),
+          { content: 'Maaf, TV tidak terdaftar.' }
+        ]
+      })
+
+      const result = await ChatService.query('hidupkan TV', { captureTrace: true })
+
+      expect(result.trace?.toolResults).toHaveLength(1)
+      expect(result.trace?.toolResults[0].ok).toBe(false)
+    })
   })
 
   it('wraps unexpected errors', async () => {

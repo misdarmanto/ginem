@@ -4,7 +4,7 @@ import { createAgent } from 'langchain'
 
 import logger from '../../utilities/logger'
 import { AppError } from '../../utilities/AppError'
-import { LLMService } from '../llm'
+import { DEFAULT_OPENAI_MODEL, LLMService } from '../llm'
 import { TTSService, type ChatAudioPayload } from './TTS.service'
 import {
   ChatMemoryService,
@@ -52,14 +52,36 @@ export interface ChatTokenUsage {
   inputTokens: number
   outputTokens: number
   totalTokens: number
+  /** Portion of inputTokens served from the provider's prompt cache (billed cheaper). */
+  cachedInputTokens: number
 }
+
+export interface ChatToolResultTrace {
+  /** Matches `ChatToolCallTrace.id`, so a call can be paired with its result. */
+  callId: string
+  name: string
+  /** False when the tool reported an error (e.g. "Device not found"). */
+  ok: boolean
+  /** Error text reported by the tool, when `ok` is false. */
+  error?: string
+  /** Raw tool output, truncated for storage. */
+  output: string
+}
+
+const TOOL_OUTPUT_MAX_CHARS = 500
+const CUSTOM_MODEL_LABEL = 'custom'
 
 export interface ChatQueryTrace {
   toolCalls: ChatToolCallTrace[]
   /** Wall time for agent.invoke only (ms). */
   agentLatencyMs: number
+  /** Time before the LLM was called: loading chat memory and the knowledge-base search (ms). */
+  contextLatencyMs: number
   /** Summed across every LLM call made during this agent run, when providers report it. */
   tokenUsage?: ChatTokenUsage
+  toolResults: ChatToolResultTrace[]
+  /** Model that answered; `custom` when an evaluation override was supplied. */
+  model: string
 }
 
 export interface ChatQueryResponse {
@@ -185,6 +207,7 @@ export class ChatService {
     userMessage: string,
     options?: ChatQueryOptions
   ): Promise<{ reply: string; trace?: ChatQueryTrace }> {
+    const contextStartedAt = Date.now()
     const memoryScope = ChatService.resolveMemoryScope(options)
     const history =
       memoryScope != null
@@ -204,6 +227,7 @@ export class ChatService {
 
     const agent = ChatService.resolveAgent(options)
     const startedAt = Date.now()
+    const contextLatencyMs = startedAt - contextStartedAt
     const result = await agent.invoke({
       messages: ChatService.toAgentMessages(history, currentContent)
     })
@@ -230,7 +254,10 @@ export class ChatService {
       reply,
       trace: {
         toolCalls: ChatService.extractToolCalls(result.messages ?? []),
+        toolResults: ChatService.extractToolResults(result.messages ?? []),
         agentLatencyMs,
+        contextLatencyMs,
+        model: options.model == null ? DEFAULT_OPENAI_MODEL : CUSTOM_MODEL_LABEL,
         ...(tokenUsage != null && { tokenUsage })
       }
     }
@@ -331,6 +358,49 @@ export class ChatService {
   }
 
   /**
+   * Collect what each tool returned. Tools signal failure with an `error` field in their JSON
+   * output (for example `{"error":"Device not found"}`), or LangChain marks the message errored.
+   */
+  static extractToolResults(
+    messages: Array<{
+      content?: unknown
+      name?: unknown
+      tool_call_id?: unknown
+      status?: unknown
+    }>
+  ): ChatToolResultTrace[] {
+    const results: ChatToolResultTrace[] = []
+
+    for (const message of messages) {
+      if (typeof message.tool_call_id !== 'string') continue
+
+      const output =
+        typeof message.content === 'string'
+          ? message.content
+          : JSON.stringify(message.content ?? '')
+
+      let error: string | undefined
+      try {
+        const parsed = JSON.parse(output) as { error?: unknown }
+        if (typeof parsed?.error === 'string' && parsed.error !== '') error = parsed.error
+      } catch {
+        // plain-text output: not a structured error
+      }
+      if (error == null && message.status === 'error') error = output
+
+      results.push({
+        callId: message.tool_call_id,
+        name: typeof message.name === 'string' ? message.name : 'unknown',
+        ok: error == null,
+        ...(error != null && { error }),
+        output: output.slice(0, TOOL_OUTPUT_MAX_CHARS)
+      })
+    }
+
+    return results
+  }
+
+  /**
    * Sums provider-reported usage_metadata across every AI message in the run
    * (an agent turn may call the model more than once before the final reply).
    * Returns undefined when no message carries usage data (provider didn't report it).
@@ -341,11 +411,17 @@ export class ChatService {
     let inputTokens = 0
     let outputTokens = 0
     let totalTokens = 0
+    let cachedInputTokens = 0
     let found = false
 
     for (const message of messages) {
       const usage = message.usage_metadata as
-        | { input_tokens?: number; output_tokens?: number; total_tokens?: number }
+        | {
+            input_tokens?: number
+            output_tokens?: number
+            total_tokens?: number
+            input_token_details?: { cache_read?: number }
+          }
         | undefined
       if (usage == null) continue
       found = true
@@ -353,8 +429,11 @@ export class ChatService {
       outputTokens += usage.output_tokens ?? 0
       totalTokens +=
         usage.total_tokens ?? (usage.input_tokens ?? 0) + (usage.output_tokens ?? 0)
+      cachedInputTokens += usage.input_token_details?.cache_read ?? 0
     }
 
-    return found ? { inputTokens, outputTokens, totalTokens } : undefined
+    return found
+      ? { inputTokens, outputTokens, totalTokens, cachedInputTokens }
+      : undefined
   }
 }

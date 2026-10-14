@@ -29,6 +29,7 @@ routers.use('/api/v1/mqtt', RoutesRegistry.MqttRoute)
 routers.use('/api/v1/admins', RoutesRegistry.AdminRoute)
 routers.use('/api/v1/settings', RoutesRegistry.SettingRoute)
 routers.use('/api/v1/rules', RoutesRegistry.RuleRoute)
+routers.use('/api/v1/agent', RoutesRegistry.AgentRoute)
 
 routers.use(
   '/api/v1/docs',
