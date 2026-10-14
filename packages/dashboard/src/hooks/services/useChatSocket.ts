@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useToken } from "@/hooks/use-token";
-import { buildChatSocketUrl, parseChatSocketPayload } from "@/services/chatSocket";
+import {
+  buildChatSocketUrl,
+  parseChatSocketPayload,
+  parseChatSocketRequestId,
+} from "@/services/chatSocket";
+import { agentService } from "@/services/agentService";
 
 export type ChatSocketStatus = "idle" | "connecting" | "open" | "closed" | "error";
 
@@ -21,6 +26,8 @@ export function useChatSocket({ enabled = true, onMessage }: UseChatSocketOption
   const getTokenRef = useRef(getToken);
   getTokenRef.current = getToken;
   const [status, setStatus] = useState<ChatSocketStatus>("idle");
+  // requestId -> performance.now() when the command was sent
+  const sentAtRef = useRef(new Map<string, number>());
 
   useEffect(() => {
     if (!enabled) {
@@ -37,6 +44,16 @@ export function useChatSocket({ enabled = true, onMessage }: UseChatSocketOption
     socket.onclose = () => setStatus("closed");
     socket.onerror = () => setStatus("error");
     socket.onmessage = (event) => {
+      const requestId = parseChatSocketRequestId(event.data);
+      const sentAt = requestId ? sentAtRef.current.get(requestId) : undefined;
+      if (requestId && sentAt !== undefined) {
+        sentAtRef.current.delete(requestId);
+        void agentService.reportClientLatency(
+          requestId,
+          Math.round(performance.now() - sentAt),
+        );
+      }
+
       const text = parseChatSocketPayload(event.data);
       if (text) onMessageRef.current(text);
     };
@@ -52,7 +69,9 @@ export function useChatSocket({ enabled = true, onMessage }: UseChatSocketOption
     if (!socket || socket.readyState !== WebSocket.OPEN) {
       return false;
     }
-    socket.send(JSON.stringify({ message: text }));
+    const requestId = crypto.randomUUID();
+    sentAtRef.current.set(requestId, performance.now());
+    socket.send(JSON.stringify({ message: text, requestId, channel: "chat" }));
     return true;
   }, []);
 

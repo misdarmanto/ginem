@@ -45,3 +45,4 @@ export {
   useVoicePreferenceQuery,
   useSelectVoiceMutation,
 } from "./useVoicePreference";
+export { useAgentLogsQuery, useAgentSummaryQuery } from "./useAgentLogs";

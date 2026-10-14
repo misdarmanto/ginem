@@ -47,7 +47,8 @@
     "logger": "Logger",
     "admin": "Admin",
     "settings": "Settings",
-    "profile": "Profile"
+    "profile": "Profile",
+    "agent": "Agent"
   },
   "header": {
     "searchPlaceholder": "Search pages…",
@@ -208,5 +209,76 @@
     "chartWillAppear": "Chart will appear when logs arrive",
     "update": "Update",
     "unknownDevice": "Unknown"
+  },
+  "agent": {
+    "title": "Agent",
+    "subtitle": "Every command sent to the AI agent: outcome, latency, tokens and estimated cost.",
+    "status": {
+      "success": "Success",
+      "failed": "Failed",
+      "clarification": "Clarification",
+      "pending": "Judging…"
+    },
+    "channel": {
+      "chat": "Chat",
+      "voice": "Voice",
+      "whatsapp": "WhatsApp"
+    },
+    "columns": {
+      "time": "Time",
+      "command": "Command",
+      "via": "Via",
+      "status": "Status",
+      "latency": "E2E latency",
+      "inputTokens": "Input",
+      "outputTokens": "Output",
+      "totalTokens": "Total",
+      "cost": "Est. cost"
+    },
+    "filters": {
+      "status": "Filter by status",
+      "allStatuses": "All statuses",
+      "search": "Search commands…",
+      "searchButton": "Search"
+    },
+    "summary": {
+      "commands": "Commands",
+      "outcomes": "{{success}} success · {{failed}} failed · {{clarification}} clarification",
+      "avgLatency": "Average E2E latency",
+      "latencyBrowser": "Measured in the browser",
+      "latencyServer": "Server-side (no browser data yet)",
+      "tokens": "Total tokens",
+      "tokenSplit": "{{input}} in · {{output}} out",
+      "cost": "Estimated cost",
+      "costNote": "LLM agent only, list prices"
+    },
+    "latencyBrowserHint": "From the browser sending the command until the reply arrived",
+    "latencyServerHint": "Measured on the server (the browser did not report)",
+    "empty": "No commands yet. Send one from the chat.",
+    "detail": {
+      "title": "Command details",
+      "close": "Close",
+      "command": "Command",
+      "status": "Outcome",
+      "reply": "Reply",
+      "timing": "Latency",
+      "e2eBrowser": "End to end (browser)",
+      "e2eServer": "End to end (server)",
+      "server": "Server total",
+      "queue": "Queue wait",
+      "context": "Memory + knowledge search",
+      "llm": "LLM and tools",
+      "usage": "Usage",
+      "model": "Model",
+      "inputTokens": "Input tokens",
+      "cachedTokens": "…of which cached",
+      "outputTokens": "Output tokens",
+      "totalTokens": "Total tokens",
+      "cost": "Estimated cost",
+      "tools": "Tools used",
+      "toolOk": "OK",
+      "toolFailed": "Failed",
+      "noTools": "No tools were called."
+    }
   }
 }

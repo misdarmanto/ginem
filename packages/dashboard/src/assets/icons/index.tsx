@@ -14,6 +14,7 @@ import QueryStatsOutlinedIcon from "@mui/icons-material/QueryStatsOutlined";
 import AccessAlarmIcon from "@mui/icons-material/AccessAlarm";
 import StorageOutlinedIcon from "@mui/icons-material/StorageOutlined";
 import RuleOutlinedIcon from "@mui/icons-material/RuleOutlined";
+import SmartToyOutlinedIcon from "@mui/icons-material/SmartToyOutlined";
 
 export const IconMenus = {
   dashboard: SpaceDashboardOutlinedIcon,
@@ -32,4 +33,5 @@ export const IconMenus = {
   schedule: AccessAlarmIcon,
   vectorIndexes: StorageOutlinedIcon,
   rules: RuleOutlinedIcon,
+  agent: SmartToyOutlinedIcon,
 };

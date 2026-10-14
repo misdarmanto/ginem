@@ -11,6 +11,11 @@ export { embeddingService } from "./embeddingService";
 export { settingsService } from "./settingsService";
 export { voiceService } from "./voiceService";
 export { llmSettingsService } from "./llmSettingsService";
-export { buildChatSocketUrl, parseChatSocketPayload } from "./chatSocket";
+export {
+  buildChatSocketUrl,
+  parseChatSocketPayload,
+  parseChatSocketRequestId,
+} from "./chatSocket";
+export { agentService } from "./agentService";
 export { queryKeys } from "./query-keys";
 export type { PaginatedResponse, TableQueryParams } from "./types";

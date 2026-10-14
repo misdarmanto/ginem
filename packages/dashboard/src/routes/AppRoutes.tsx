@@ -22,6 +22,7 @@ const ListSchedulerPage = lazy(
   () => import("@/pages/scheduler/ListSchedulerView"),
 );
 const ListLoggerPage = lazy(() => import("@/pages/logger/ListLoggerView"));
+const AgentLogsPage = lazy(() => import("@/pages/agent/AgentLogsView"));
 const ListEmbeddingPage = lazy(
   () => import("@/pages/embedding/ListEmbeddingView"),
 );
@@ -75,6 +76,7 @@ export default function AppRoutes() {
       element: <Navigate to={ROUTES.scheduler} replace />,
     },
     { path: ROUTES.logger, element: withSuspense(<ListLoggerPage />) },
+    { path: ROUTES.agent, element: withSuspense(<AgentLogsPage />) },
     { path: ROUTES.indexing, element: withSuspense(<ListEmbeddingPage />) },
     { path: ROUTES.admins, element: withSuspense(<ListAdminsPage />) },
     { path: ROUTES.profile, element: withSuspense(<ProfilePage />) },

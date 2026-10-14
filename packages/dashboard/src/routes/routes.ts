@@ -8,6 +8,7 @@ export const ROUTES = {
   ruleDetail: (id: string | number) => `/rules/${id}`,
   scheduler: "/scheduler",
   logger: "/logger",
+  agent: "/agent",
   indexing: "/indexing",
   admins: "/admin",
   profile: "/my-profile",

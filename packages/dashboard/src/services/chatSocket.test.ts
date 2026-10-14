@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { buildChatSocketUrl, parseChatSocketPayload } from "./chatSocket";
+import {
+  buildChatSocketUrl,
+  parseChatSocketPayload,
+  parseChatSocketRequestId,
+} from "./chatSocket";
 
 describe("buildChatSocketUrl", () => {
   it("converts http base url to ws and appends the chat path with token", () => {
@@ -58,5 +62,33 @@ describe("parseChatSocketPayload", () => {
     expect(parseChatSocketPayload("plain text reply")).toBe(
       "plain text reply",
     );
+  });
+});
+
+describe("parseChatSocketRequestId", () => {
+  it("returns the id echoed on a reply", () => {
+    expect(
+      parseChatSocketRequestId(
+        JSON.stringify({ type: "chat.reply", requestId: "req-1", data: { reply: "ok" } }),
+      ),
+    ).toBe("req-1");
+  });
+
+  it("returns the id echoed on an error frame", () => {
+    expect(
+      parseChatSocketRequestId(
+        JSON.stringify({ type: "chat.error", requestId: "req-2", message: "x" }),
+      ),
+    ).toBe("req-2");
+  });
+
+  it.each([
+    ["a frame without an id", JSON.stringify({ type: "connected", userId: 1 })],
+    ["an empty id", JSON.stringify({ requestId: "" })],
+    ["a non-string id", JSON.stringify({ requestId: 5 })],
+    ["non-JSON text", "plain text"],
+    ["an empty frame", ""],
+  ])("returns null for %s", (_label, raw) => {
+    expect(parseChatSocketRequestId(raw)).toBeNull();
   });
 });

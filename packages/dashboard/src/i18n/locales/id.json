@@ -47,7 +47,8 @@
     "logger": "Log",
     "admin": "Admin",
     "settings": "Pengaturan",
-    "profile": "Profil"
+    "profile": "Profil",
+    "agent": "Agent"
   },
   "header": {
     "searchPlaceholder": "Cari halaman…",
@@ -208,5 +209,76 @@
     "chartWillAppear": "Grafik akan muncul saat log tersedia",
     "update": "Perbarui",
     "unknownDevice": "Tidak diketahui"
+  },
+  "agent": {
+    "title": "Agent",
+    "subtitle": "Setiap perintah yang dikirim ke AI agent: hasil, latensi, token, dan estimasi biaya.",
+    "status": {
+      "success": "Berhasil",
+      "failed": "Gagal",
+      "clarification": "Klarifikasi",
+      "pending": "Menilai…"
+    },
+    "channel": {
+      "chat": "Chat",
+      "voice": "Suara",
+      "whatsapp": "WhatsApp"
+    },
+    "columns": {
+      "time": "Waktu",
+      "command": "Perintah",
+      "via": "Via",
+      "status": "Status",
+      "latency": "Latensi E2E",
+      "inputTokens": "Input",
+      "outputTokens": "Output",
+      "totalTokens": "Total",
+      "cost": "Estimasi biaya"
+    },
+    "filters": {
+      "status": "Filter status",
+      "allStatuses": "Semua status",
+      "search": "Cari perintah…",
+      "searchButton": "Cari"
+    },
+    "summary": {
+      "commands": "Perintah",
+      "outcomes": "{{success}} berhasil · {{failed}} gagal · {{clarification}} klarifikasi",
+      "avgLatency": "Rata-rata latensi E2E",
+      "latencyBrowser": "Diukur di browser",
+      "latencyServer": "Dari server (belum ada data browser)",
+      "tokens": "Total token",
+      "tokenSplit": "{{input}} masuk · {{output}} keluar",
+      "cost": "Estimasi biaya",
+      "costNote": "Hanya LLM agent, harga resmi"
+    },
+    "latencyBrowserHint": "Dari browser mengirim perintah sampai balasan diterima",
+    "latencyServerHint": "Diukur di server (browser tidak melaporkan)",
+    "empty": "Belum ada perintah. Kirim satu dari chat.",
+    "detail": {
+      "title": "Detail perintah",
+      "close": "Tutup",
+      "command": "Perintah",
+      "status": "Hasil",
+      "reply": "Balasan",
+      "timing": "Latensi",
+      "e2eBrowser": "End to end (browser)",
+      "e2eServer": "End to end (server)",
+      "server": "Total di server",
+      "queue": "Antre",
+      "context": "Memori + pencarian pengetahuan",
+      "llm": "LLM dan tool",
+      "usage": "Pemakaian",
+      "model": "Model",
+      "inputTokens": "Token input",
+      "cachedTokens": "…termasuk cache",
+      "outputTokens": "Token output",
+      "totalTokens": "Total token",
+      "cost": "Estimasi biaya",
+      "tools": "Tool yang dipakai",
+      "toolOk": "OK",
+      "toolFailed": "Gagal",
+      "noTools": "Tidak ada tool yang dipanggil."
+    }
   }
 }

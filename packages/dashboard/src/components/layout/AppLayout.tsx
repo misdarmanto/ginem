@@ -94,6 +94,11 @@ function useMainNav(): NavItem[] {
       icon: <IconMenus.vectorIndexes fontSize="small" />,
     },
     {
+      title: t("nav.agent"),
+      link: ROUTES.agent,
+      icon: <IconMenus.agent fontSize="small" />,
+    },
+    {
       title: t("nav.logger"),
       link: ROUTES.logger,
       icon: <IconMenus.logger fontSize="small" />,
