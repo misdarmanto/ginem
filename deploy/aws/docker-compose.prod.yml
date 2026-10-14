@@ -9,6 +9,8 @@ services:
     build:
       context: .
       dockerfile: deploy/aws/api.Dockerfile
+    environment:
+      TZ: Asia/Jakarta
     ports: !reset []
     volumes: !override
       - whatsapp_sessions:/app/packages/api/resources/whatsapp/sessions
