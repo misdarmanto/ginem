@@ -280,6 +280,29 @@
       "toolOk": "OK",
       "toolFailed": "Failed",
       "noTools": "No tools were called."
+    },
+    "export": {
+      "button": "Export CSV",
+      "title": "Export agent log to CSV",
+      "presets": "Date range",
+      "preset": {
+        "today": "Today",
+        "yesterday": "Yesterday",
+        "thisWeek": "This week",
+        "thisMonth": "This month",
+        "all": "All time",
+        "custom": "Custom"
+      },
+      "from": "From",
+      "to": "To",
+      "summaryAll": "All logs",
+      "summaryRange": "Logs from {{from}} to {{to}} (both days included)",
+      "filterNote": "The status filter and search currently applied to the table are included.",
+      "errorIncomplete": "Pick both a start and an end date.",
+      "errorOrder": "The start date must not be after the end date.",
+      "failed": "The export failed. Please try again.",
+      "cancel": "Cancel",
+      "download": "Download CSV"
     }
   }
 }

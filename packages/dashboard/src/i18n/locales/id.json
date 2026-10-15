@@ -280,6 +280,29 @@
       "toolOk": "OK",
       "toolFailed": "Gagal",
       "noTools": "Tidak ada tool yang dipanggil."
+    },
+    "export": {
+      "button": "Ekspor CSV",
+      "title": "Ekspor log agent ke CSV",
+      "presets": "Rentang tanggal",
+      "preset": {
+        "today": "Hari ini",
+        "yesterday": "Kemarin",
+        "thisWeek": "Minggu ini",
+        "thisMonth": "Bulan ini",
+        "all": "Semua",
+        "custom": "Kustom"
+      },
+      "from": "Dari",
+      "to": "Sampai",
+      "summaryAll": "Semua log",
+      "summaryRange": "Log dari {{from}} sampai {{to}} (kedua tanggal ikut)",
+      "filterNote": "Filter status dan pencarian yang sedang dipakai di tabel ikut diterapkan.",
+      "errorIncomplete": "Pilih tanggal mulai dan tanggal akhir.",
+      "errorOrder": "Tanggal mulai tidak boleh setelah tanggal akhir.",
+      "failed": "Ekspor gagal. Silakan coba lagi.",
+      "cancel": "Batal",
+      "download": "Unduh CSV"
     }
   }
 }

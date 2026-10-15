@@ -1,4 +1,5 @@
 import { useState } from "react";
+import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
 import { useTranslation } from "react-i18next";
 import type { GridColDef } from "@mui/x-data-grid";
 import {
@@ -19,6 +20,7 @@ import { ROUTES } from "@/routes/routes";
 import { useAgentLogsQuery, useAgentSummaryQuery } from "@/hooks/services";
 import type { AgentLog } from "@/services/agentService";
 import AgentLogDetailDrawer from "@/features/agent/components/AgentLogDetailDrawer";
+import ExportCsvDialog from "@/features/agent/components/ExportCsvDialog";
 import AgentStatusChip from "@/features/agent/components/AgentStatusChip";
 import AgentSummaryCards from "@/features/agent/components/AgentSummaryCards";
 import {
@@ -38,6 +40,7 @@ export default function AgentLogsView() {
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<AgentLog | null>(null);
+  const [exportOpen, setExportOpen] = useState(false);
 
   const filter = { status: status || undefined, search: search || undefined };
   const { data, isFetching } = useAgentLogsQuery({
@@ -191,6 +194,13 @@ export default function AgentLogsView() {
             {t("agent.filters.searchButton")}
           </Button>
         </Box>
+        <Button
+          variant="contained"
+          startIcon={<FileDownloadOutlinedIcon />}
+          onClick={() => setExportOpen(true)}
+        >
+          {t("agent.export.button")}
+        </Button>
       </Stack>
 
       <AppDataGrid
@@ -209,6 +219,11 @@ export default function AgentLogsView() {
       />
 
       <AgentLogDetailDrawer log={selected} onClose={() => setSelected(null)} />
+      <ExportCsvDialog
+        open={exportOpen}
+        onClose={() => setExportOpen(false)}
+        filter={filter}
+      />
     </>
   );
 }

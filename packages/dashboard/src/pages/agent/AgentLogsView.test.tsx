@@ -190,6 +190,17 @@ describe("AgentLogsView", () => {
     expect(summaryQuery).toHaveBeenLastCalledWith({ status: "failed", search: undefined });
   });
 
+  it("opens the export dialog with the current filters from the Export CSV button", () => {
+    renderPage();
+
+    fireEvent.mouseDown(screen.getByRole("combobox"));
+    fireEvent.click(within(screen.getByRole("listbox")).getByText("Failed"));
+    fireEvent.click(screen.getByRole("button", { name: "Export CSV" }));
+
+    expect(screen.getByText("Export agent log to CSV")).toBeInTheDocument();
+    expect(screen.getByText(/currently applied to the table/)).toBeInTheDocument();
+  });
+
   it("opens the details of a command when its row is clicked", () => {
     renderPage();
 

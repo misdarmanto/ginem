@@ -2,9 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/services/api", () => ({
   apiClient: { get: vi.fn(), patch: vi.fn() },
+  api: { get: vi.fn() },
 }));
 
-import { apiClient } from "@/services/api";
+import { api, apiClient } from "@/services/api";
 import { AGENT_API, agentService, summaryPath } from "./agentService";
 
 describe("summaryPath", () => {
@@ -36,6 +37,43 @@ describe("agentService.getSummary", () => {
 
     expect(await agentService.getSummary({ status: "success" })).toEqual({ total: 3 });
     expect(apiClient.get).toHaveBeenCalledWith("/agent/logs/summary?status=success");
+  });
+});
+
+describe("agentService.exportCsv", () => {
+  it("asks for the file with the range and filters, as a blob", async () => {
+    const file = new Blob(["csv"]);
+    vi.mocked(api.get).mockResolvedValue({ data: file });
+
+    const result = await agentService.exportCsv({
+      from: "2026-10-01",
+      to: "2026-10-15",
+      status: "failed",
+      search: "lampu",
+    });
+
+    expect(result).toBe(file);
+    expect(api.get).toHaveBeenCalledWith("/agent/logs/export", {
+      params: { from: "2026-10-01", to: "2026-10-15", status: "failed", search: "lampu" },
+      responseType: "blob",
+    });
+  });
+
+  it("leaves empty filters out of the request", async () => {
+    vi.mocked(api.get).mockResolvedValue({ data: new Blob([]) });
+
+    await agentService.exportCsv({ from: "", to: "", status: undefined, search: "" });
+
+    expect(api.get).toHaveBeenCalledWith("/agent/logs/export", {
+      params: {},
+      responseType: "blob",
+    });
+  });
+
+  it("passes a failure on so the dialog can show it", async () => {
+    vi.mocked(api.get).mockRejectedValue(new Error("boom"));
+
+    await expect(agentService.exportCsv({})).rejects.toThrow("boom");
   });
 });
 

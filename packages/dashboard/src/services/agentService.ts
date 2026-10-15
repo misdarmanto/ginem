@@ -1,8 +1,9 @@
-import { apiClient } from "./api";
+import { api, apiClient } from "./api";
 
 export const AGENT_API = {
   logs: "/agent/logs",
   summary: "/agent/logs/summary",
+  export: "/agent/logs/export",
   clientLatency: (requestId: string) =>
     `/agent/logs/${encodeURIComponent(requestId)}/client-latency`,
 } as const;
@@ -62,6 +63,13 @@ export interface AgentLogFilter {
   search?: string;
 }
 
+export interface AgentLogExportFilter extends AgentLogFilter {
+  /** First day included, YYYY-MM-DD. Empty or missing: from the beginning. */
+  from?: string;
+  /** Last day included, YYYY-MM-DD. Empty or missing: up to now. */
+  to?: string;
+}
+
 /** The log row is written just after the reply is sent, so the first report may arrive too early. */
 const REPORT_ATTEMPTS = 3;
 const REPORT_RETRY_DELAY_MS = 1200;
@@ -79,6 +87,18 @@ export function summaryPath(filter: AgentLogFilter): string {
 export const agentService = {
   getSummary: (filter: AgentLogFilter) =>
     apiClient.get<AgentLogSummary>(summaryPath(filter)),
+
+  /** The matching logs as a CSV file. Empty filters are left out of the request. */
+  exportCsv: async (filter: AgentLogExportFilter): Promise<Blob> => {
+    const params = Object.fromEntries(
+      Object.entries(filter).filter(([, value]) => value),
+    );
+    const response = await api.get<Blob>(AGENT_API.export, {
+      params,
+      responseType: "blob",
+    });
+    return response.data;
+  },
 
   /**
    * Tells the backend how long a command took from the browser's point of view (send to reply
