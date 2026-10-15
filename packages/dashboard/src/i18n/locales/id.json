@@ -61,7 +61,8 @@
     "openMenu": "Buka menu",
     "closeMenu": "Tutup menu",
     "logout": "Keluar",
-    "there": "kamu"
+    "there": "kamu",
+    "mainNavigation": "Navigasi utama"
   },
   "auth": {
     "welcomeBack": "Selamat datang kembali",

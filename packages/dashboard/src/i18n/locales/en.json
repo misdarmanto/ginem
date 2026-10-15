@@ -61,7 +61,8 @@
     "openMenu": "Open menu",
     "closeMenu": "Close menu",
     "logout": "Logout",
-    "there": "there"
+    "there": "there",
+    "mainNavigation": "Main navigation"
   },
   "auth": {
     "welcomeBack": "Welcome back",
