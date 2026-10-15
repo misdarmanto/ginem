@@ -90,6 +90,11 @@ if [ ! -f "$ENV_FILE" ]; then
   set_kv "$ENV_FILE" RABBITMQ_PASSWORD "$(openssl rand -hex 16)"
   set_kv "$ENV_FILE" MQTT_CLIENT_ID "${base_client:-ginem}-prod"
 fi
+# Provider keys follow the local .env, so a rotated key reaches the server on the next deploy.
+for key in OPENAI_API_KEY DEEPSEEK_API_KEY ANTHROPIC_API_KEY; do
+  value=$(grep "^$key=" "$ROOT/packages/api/.env" | head -1 | cut -d= -f2- || true)
+  [ -z "$value" ] || set_kv "$ENV_FILE" "$key" "$value"
+done
 set_kv "$ENV_FILE" SITE_HOST "$HOST"
 set_kv "$ENV_FILE" CORS_ORIGIN "https://$HOST"
 
