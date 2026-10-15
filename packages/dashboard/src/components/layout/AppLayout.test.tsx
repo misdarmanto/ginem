@@ -6,11 +6,19 @@ import { ColorModeContext } from "@/context/colorMode.context";
 import { SIDEBAR_STORAGE_KEY } from "./useSidebarOpen";
 
 vi.mock("@/features/chat/components/ChatWidget", () => ({ ChatWidget: () => null }));
-vi.mock("@/features/notifications/components/NotificationPanel", () => ({
-  NotificationPanel: () => null,
-}));
 vi.mock("@/hooks/services", () => ({
   useMyProfileQuery: () => ({ data: { userName: "Admin One" } }),
+}));
+const notifications = {
+  items: [] as unknown[],
+  isLoading: false,
+  isError: false,
+  unreadCount: 0,
+  lastSeenId: null as number | null,
+  markAllRead: vi.fn(),
+};
+vi.mock("@/features/notifications/useSystemNotifications", () => ({
+  useSystemNotifications: () => notifications,
 }));
 vi.mock("@/hooks/use-token", () => ({ useToken: () => ({ removeToken: vi.fn() }) }));
 vi.mock("@/context/app.context.store", () => ({
@@ -59,6 +67,8 @@ describe("AppLayout sidebar", () => {
 
   beforeEach(() => {
     stubViewport(false);
+    notifications.unreadCount = 0;
+    notifications.items = [];
   });
 
   afterEach(() => {
@@ -68,7 +78,7 @@ describe("AppLayout sidebar", () => {
   it("starts open, with the full menu, text labels and an arrow to collapse", () => {
     renderLayout();
 
-    expect(sidebar()).toHaveStyle({ width: "260px" });
+    expect(sidebar()).toHaveStyle({ width: "208px" });
     expect(within(sidebar()).getByText("Agent")).toBeInTheDocument();
     expect(within(sidebar()).getByText("Ginem AI")).toBeInTheDocument();
     expect(sidebarArrow()).toHaveAccessibleName("Close menu");
@@ -99,13 +109,21 @@ describe("AppLayout sidebar", () => {
 
     fireEvent.click(sidebarArrow());
 
-    ["Dashboard", "Devices", "Rules", "Scheduler", "Embedding", "Agent", "Logger", "Admin", "Settings", "Profile"].forEach(
+    ["Dashboard", "Devices", "Rules", "Scheduler", "Agent", "Logger", "Admin", "Settings", "Profile"].forEach(
       (name) => {
         expect(within(sidebar()).getByRole("link", { name })).toHaveAttribute("href");
       },
     );
     expect(within(sidebar()).queryByText("Agent")).not.toBeInTheDocument();
     expect(within(sidebar()).queryByText("Ginem AI")).not.toBeInTheDocument();
+  });
+
+  it("no longer lists Embedding, which now lives inside Agent", () => {
+    renderLayout();
+
+    expect(within(sidebar()).queryByText("Embedding")).not.toBeInTheDocument();
+    fireEvent.click(sidebarArrow());
+    expect(within(sidebar()).queryByRole("link", { name: "Embedding" })).not.toBeInTheDocument();
   });
 
   it("marks the page you are on in the rail", () => {
@@ -134,7 +152,7 @@ describe("AppLayout sidebar", () => {
     fireEvent.click(sidebarArrow());
     fireEvent.click(sidebarArrow());
 
-    expect(sidebar()).toHaveStyle({ width: "260px" });
+    expect(sidebar()).toHaveStyle({ width: "208px" });
     expect(within(sidebar()).getByText("Agent")).toBeInTheDocument();
     expect(sidebarArrow()).toHaveAccessibleName("Close menu");
   });
@@ -171,5 +189,50 @@ describe("AppLayout sidebar", () => {
 
     expect(sidebar()).toBeNull();
     expect(headerMenuButton()).toHaveAccessibleName("Open menu");
+  });
+
+  describe("notification bell", () => {
+    const bell = () =>
+      within(screen.getByRole("banner")).getByRole("button", { name: /^Notifications/ });
+
+    it("has no badge when nothing is new", () => {
+      renderLayout();
+
+      expect(bell()).toHaveAccessibleName("Notifications");
+      expect(within(bell()).queryByText(/^\d/)).not.toBeInTheDocument();
+    });
+
+    it("shows how many new system events there are, and says so to screen readers", () => {
+      notifications.unreadCount = 3;
+      renderLayout();
+
+      expect(within(bell()).getByText("3")).toBeInTheDocument();
+      expect(bell()).toHaveAccessibleName("Notifications (3 new)");
+    });
+
+    it("caps a large count at 9+", () => {
+      notifications.unreadCount = 15;
+      renderLayout();
+
+      expect(within(bell()).getByText("9+")).toBeInTheDocument();
+    });
+
+    it("opens the panel with the logged events and marks them seen", () => {
+      notifications.items = [
+        {
+          appLogId: 1,
+          appLogLevel: "error",
+          appLogMessage: "[ChatServices] - Failed to send message",
+          appLogSource: null,
+          createdAt: "2026-08-19 21:42:33",
+        },
+      ];
+      renderLayout();
+
+      fireEvent.click(bell());
+
+      expect(screen.getByText("[ChatServices] - Failed to send message")).toBeInTheDocument();
+      expect(notifications.markAllRead).toHaveBeenCalled();
+    });
   });
 });

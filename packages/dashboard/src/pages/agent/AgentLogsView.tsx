@@ -12,11 +12,7 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import BreadCrumberStyle from "@/components/common/Breadcrumb";
-import PageHeader from "@/components/common/PageHeader";
 import AppDataGrid from "@/components/common/AppDataGrid";
-import { IconMenus } from "@/assets/icons";
-import { ROUTES } from "@/routes/routes";
 import { useAgentLogsQuery, useAgentSummaryQuery } from "@/hooks/services";
 import type { AgentLog } from "@/services/agentService";
 import AgentLogDetailDrawer from "@/features/agent/components/AgentLogDetailDrawer";
@@ -139,17 +135,6 @@ export default function AgentLogsView() {
 
   return (
     <>
-      <BreadCrumberStyle
-        navigation={[
-          {
-            label: t("nav.agent"),
-            link: ROUTES.agent,
-            icon: <IconMenus.agent fontSize="small" />,
-          },
-        ]}
-      />
-      <PageHeader title={t("agent.title")} subtitle={t("agent.subtitle")} />
-
       <AgentSummaryCards summary={summary} />
 
       <Stack

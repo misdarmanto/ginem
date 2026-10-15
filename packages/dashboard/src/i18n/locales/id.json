@@ -43,7 +43,6 @@
     "devices": "Perangkat",
     "rules": "Aturan",
     "scheduler": "Penjadwal",
-    "embedding": "Embedding",
     "logger": "Log",
     "admin": "Admin",
     "settings": "Pengaturan",
@@ -62,7 +61,8 @@
     "closeMenu": "Tutup menu",
     "logout": "Keluar",
     "there": "kamu",
-    "mainNavigation": "Navigasi utama"
+    "mainNavigation": "Navigasi utama",
+    "notificationsUnread": "Notifikasi ({{count}} baru)"
   },
   "auth": {
     "welcomeBack": "Selamat datang kembali",
@@ -189,9 +189,12 @@
   },
   "notificationsPanel": {
     "title": "Notifikasi",
-    "subtitle": "Pembaruan dan aktivitas terbaru",
+    "subtitle": "Peristiwa sistem dari logger",
     "close": "Tutup notifikasi",
-    "empty": "Belum ada notifikasi."
+    "empty": "Belum ada peristiwa sistem.",
+    "error": "Notifikasi gagal dimuat.",
+    "unread": "Baru",
+    "viewAll": "Lihat semua di Logger"
   },
   "devices": {
     "title": "Perangkat",
@@ -213,7 +216,7 @@
   },
   "agent": {
     "title": "Agent",
-    "subtitle": "Setiap perintah yang dikirim ke AI agent: hasil, latensi, token, dan estimasi biaya.",
+    "subtitle": "Log perintah AI agent dan basis pengetahuan (embedding) yang dipakainya.",
     "status": {
       "success": "Berhasil",
       "failed": "Gagal",
@@ -304,6 +307,11 @@
       "failed": "Ekspor gagal. Silakan coba lagi.",
       "cancel": "Batal",
       "download": "Unduh CSV"
+    },
+    "tabs": {
+      "label": "Bagian Agent",
+      "log": "Log",
+      "embedding": "Embedding"
     }
   }
 }

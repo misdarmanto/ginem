@@ -29,9 +29,7 @@ import {
   GridColDef,
   GridPaginationModel,
 } from "@mui/x-data-grid";
-import BreadCrumberStyle from "@/components/common/Breadcrumb";
 import AppDataGrid from "@/components/common/AppDataGrid";
-import { IconMenus } from "@/assets/icons";
 import { convertTime } from "@/utils/convertTime";
 import { useSearchParams } from "react-router-dom";
 import SearchIcon from "@mui/icons-material/Search";
@@ -700,16 +698,6 @@ export default function ListEmbeddingView() {
 
   return (
     <Box sx={{ pb: 2 }}>
-      <BreadCrumberStyle
-        navigation={[
-          {
-            label: "Embedding",
-            link: "/indexing",
-            icon: <IconMenus.vectorIndexes fontSize="small" />,
-          },
-        ]}
-      />
-
       <Paper variant="outlined" sx={{ p: { xs: 1.5, md: 2 } }}>
         <Stack
           direction={{ xs: "column", md: "row" }}

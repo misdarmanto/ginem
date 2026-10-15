@@ -43,7 +43,6 @@
     "devices": "Devices",
     "rules": "Rules",
     "scheduler": "Scheduler",
-    "embedding": "Embedding",
     "logger": "Logger",
     "admin": "Admin",
     "settings": "Settings",
@@ -62,7 +61,8 @@
     "closeMenu": "Close menu",
     "logout": "Logout",
     "there": "there",
-    "mainNavigation": "Main navigation"
+    "mainNavigation": "Main navigation",
+    "notificationsUnread": "Notifications ({{count}} new)"
   },
   "auth": {
     "welcomeBack": "Welcome back",
@@ -189,9 +189,12 @@
   },
   "notificationsPanel": {
     "title": "Notifications",
-    "subtitle": "Latest updates and activity",
+    "subtitle": "System events from the logger",
     "close": "Close notifications",
-    "empty": "No notifications yet."
+    "empty": "No system events yet.",
+    "error": "Could not load notifications.",
+    "unread": "New",
+    "viewAll": "View all in Logger"
   },
   "devices": {
     "title": "Devices",
@@ -213,7 +216,7 @@
   },
   "agent": {
     "title": "Agent",
-    "subtitle": "Every command sent to the AI agent: outcome, latency, tokens and estimated cost.",
+    "subtitle": "The AI agent's command log and the knowledge base (embeddings) it draws on.",
     "status": {
       "success": "Success",
       "failed": "Failed",
@@ -304,6 +307,11 @@
       "failed": "The export failed. Please try again.",
       "cancel": "Cancel",
       "download": "Download CSV"
+    },
+    "tabs": {
+      "label": "Agent sections",
+      "log": "Log",
+      "embedding": "Embedding"
     }
   }
 }

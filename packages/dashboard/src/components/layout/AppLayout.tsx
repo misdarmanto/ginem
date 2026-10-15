@@ -18,6 +18,7 @@ import {
   Menu,
   MenuItem,
   Tooltip,
+  Badge,
   ButtonBase,
   Backdrop,
   CircularProgress,
@@ -55,13 +56,14 @@ import { IconMenus } from "@/assets/icons";
 import { ColorModeContext } from "@/context/colorMode.context";
 import { ChatWidget } from "@/features/chat/components/ChatWidget";
 import { NotificationPanel } from "@/features/notifications/components/NotificationPanel";
+import { useSystemNotifications } from "@/features/notifications/useSystemNotifications";
 import { ROUTES } from "@/routes/routes";
 import { brand } from "@/styles/theme";
 import { useMyProfileQuery } from "@/hooks/services";
 import { changeLanguage } from "@/i18n/config";
 import { useSidebarOpen } from "./useSidebarOpen";
 
-const drawerWidth = 260;
+const drawerWidth = 208;
 /** Collapsed sidebar: a rail of icons, like the server list in Discord. */
 const railWidth = 76;
 const RAIL_ICON_SIZE = 48;
@@ -95,11 +97,6 @@ function useMainNav(): NavItem[] {
       title: t("nav.scheduler"),
       link: ROUTES.scheduler,
       icon: <IconMenus.schedule fontSize="small" />,
-    },
-    {
-      title: t("nav.embedding"),
-      link: ROUTES.indexing,
-      icon: <IconMenus.vectorIndexes fontSize="small" />,
     },
     {
       title: t("nav.agent"),
@@ -484,6 +481,7 @@ export default function AppLayout() {
     useState<null | HTMLElement>(null);
   const [search, setSearch] = useState("");
   const [notificationOpen, setNotificationOpen] = useState(false);
+  const notifications = useSystemNotifications();
 
   const displayName = useMemo(() => {
     const name = profile?.userName?.trim();
@@ -764,14 +762,27 @@ export default function AppLayout() {
               </Tooltip>
               <Tooltip title={t("header.notifications")}>
                 <IconButton
-                  aria-label={t("header.notifications")}
+                  aria-label={
+                    notifications.unreadCount > 0
+                      ? t("header.notificationsUnread", {
+                          count: notifications.unreadCount,
+                        })
+                      : t("header.notifications")
+                  }
                   onClick={() => setNotificationOpen(true)}
                   sx={{
                     bgcolor: alpha(brand.indigo, 0.06),
                     "&:hover": { bgcolor: alpha(brand.indigo, 0.12) },
                   }}
                 >
-                  <NotificationsNoneOutlined fontSize="small" />
+                  <Badge
+                    color="error"
+                    badgeContent={notifications.unreadCount}
+                    max={9}
+                    overlap="circular"
+                  >
+                    <NotificationsNoneOutlined fontSize="small" />
+                  </Badge>
                 </IconButton>
               </Tooltip>
               <Tooltip title={t("language.label")}>
@@ -951,6 +962,11 @@ export default function AppLayout() {
       <NotificationPanel
         open={notificationOpen}
         onClose={() => setNotificationOpen(false)}
+        items={notifications.items}
+        isLoading={notifications.isLoading}
+        isError={notifications.isError}
+        lastSeenId={notifications.lastSeenId}
+        onSeen={notifications.markAllRead}
       />
     </Box>
   );
