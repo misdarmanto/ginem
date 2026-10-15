@@ -1,7 +1,11 @@
 import { Op } from 'sequelize'
 import { StatusCodes } from 'http-status-codes'
 import type { ChatQueryTrace } from '../../chat/Chat.service'
-import { AgentLogService, type RecordExecutionInput } from '../AgentLog.service'
+import {
+  AgentLogService,
+  EXPORT_MAX_ROWS,
+  type RecordExecutionInput
+} from '../AgentLog.service'
 
 jest.mock('../../../models/AgentLogModel', () => ({
   AgentLogModel: {
@@ -415,6 +419,112 @@ describe('AgentLogService.setClientLatency', () => {
 
     await expect(AgentLogService.setClientLatency('nope', 1, user)).rejects.toMatchObject({
       statusCode: StatusCodes.NOT_FOUND
+    })
+  })
+})
+
+describe('AgentLogService date range and export', () => {
+  const user = { userId: 7, role: 'user' as const }
+  const admin = { userId: 1, role: 'admin' as const }
+  const filters = { status: undefined, search: undefined, from: undefined, to: undefined }
+  const rowOf = (id: number) => ({
+    agentLogId: id,
+    get: () => ({ agentLogId: id, estimatedCostUsd: '0.001' })
+  })
+  const whereOfCall = (n: number) => AgentLogModel.findAll.mock.calls[n][0].where
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+  })
+
+  async function drain(generator: AsyncGenerator<unknown[]>) {
+    const batches: unknown[][] = []
+    for await (const batch of generator) batches.push(batch)
+    return batches
+  }
+
+  describe('date filter', () => {
+    it.each([
+      [{ from: '2026-10-01', to: '2026-10-15' }, 2],
+      [{ from: '2026-10-01' }, 1],
+      [{ to: '2026-10-15' }, 1],
+      [{}, 0]
+    ])('applies %p as %p date bound(s)', async (range, bounds) => {
+      AgentLogModel.findAll.mockResolvedValue([])
+
+      await drain(AgentLogService.iterateForExport({ ...filters, ...range }, admin))
+
+      const where = whereOfCall(0)
+      const symbols = Object.getOwnPropertySymbols(where)
+      expect(symbols.length === 0 ? 0 : where[symbols[0]].length).toBe(bounds)
+    })
+  })
+
+  describe('iterateForExport', () => {
+    it('yields rows oldest first, in batches, following an id cursor', async () => {
+      const first = Array.from({ length: 500 }, (_, i) => rowOf(i + 1))
+      const second = [rowOf(501), rowOf(502)]
+      AgentLogModel.findAll
+        .mockResolvedValueOnce(first)
+        .mockResolvedValueOnce(second)
+        .mockResolvedValueOnce([])
+
+      const batches = await drain(AgentLogService.iterateForExport(filters, admin))
+
+      expect(batches.map((batch) => batch.length)).toEqual([500, 2])
+      const firstCall = AgentLogModel.findAll.mock.calls[0][0]
+      expect(firstCall.order).toEqual([['agentLogId', 'ASC']])
+      expect(firstCall.where.agentLogId[Op.gt]).toBe(0)
+      expect(AgentLogModel.findAll.mock.calls[1][0].where.agentLogId[Op.gt]).toBe(500)
+      expect(AgentLogModel.findAll.mock.calls[2][0].where.agentLogId[Op.gt]).toBe(502)
+    })
+
+    it('returns numbers for the cost', async () => {
+      AgentLogModel.findAll.mockResolvedValueOnce([rowOf(1)]).mockResolvedValueOnce([])
+
+      const [batch] = (await drain(AgentLogService.iterateForExport(filters, admin))) as Array<
+        Array<{ estimatedCostUsd: number }>
+      >
+
+      expect(batch[0].estimatedCostUsd).toBe(0.001)
+    })
+
+    it('yields nothing when nothing matches', async () => {
+      AgentLogModel.findAll.mockResolvedValue([])
+
+      expect(await drain(AgentLogService.iterateForExport(filters, admin))).toEqual([])
+    })
+
+    it("limits a normal user to their own commands and lets an admin see everyone's", async () => {
+      AgentLogModel.findAll.mockResolvedValue([])
+
+      await drain(AgentLogService.iterateForExport(filters, user))
+      await drain(AgentLogService.iterateForExport(filters, admin))
+
+      expect(whereOfCall(0)).toMatchObject({ userId: 7 })
+      expect(whereOfCall(1).userId).toBeUndefined()
+    })
+
+    it('carries the status and search filters into the query', async () => {
+      AgentLogModel.findAll.mockResolvedValue([])
+
+      await drain(
+        AgentLogService.iterateForExport({ ...filters, status: 'failed', search: 'lampu' }, admin)
+      )
+
+      expect(whereOfCall(0)).toMatchObject({
+        status: 'failed',
+        command: { [Op.like]: '%lampu%' }
+      })
+    })
+
+    it('stops at the row cap instead of reading forever', async () => {
+      const full = Array.from({ length: 500 }, (_, i) => rowOf(i + 1))
+      AgentLogModel.findAll.mockResolvedValue(full)
+
+      const batches = await drain(AgentLogService.iterateForExport(filters, admin))
+
+      expect(batches.reduce((sum, batch) => sum + batch.length, 0)).toBe(EXPORT_MAX_ROWS)
     })
   })
 })

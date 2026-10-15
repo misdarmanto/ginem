@@ -5,6 +5,7 @@ import { MiddleWares } from '../middlewares/index'
 import {
   agentLogSummarySchema,
   clientLatencyBodySchema,
+  exportAgentLogsSchema,
   findAllAgentLogsSchema,
   requestIdParamSchema
 } from '../schemas/AgentLogSchema'
@@ -23,6 +24,12 @@ AgentRoute.get(
   '/logs/summary',
   MiddleWares.validate({ query: agentLogSummarySchema }),
   AgentController.summary
+)
+
+AgentRoute.get(
+  '/logs/export',
+  MiddleWares.validate({ query: exportAgentLogsSchema }),
+  AgentController.export
 )
 
 AgentRoute.patch(

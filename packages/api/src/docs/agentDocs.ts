@@ -58,6 +58,44 @@
 
 /**
  * @swagger
+ * /api/v1/agent/logs/export:
+ *   get:
+ *     summary: Download the agent log as CSV
+ *     description: |
+ *       Streams every matching log, oldest first. `from` and `to` are calendar dates (WIB) and
+ *       both are inclusive; leave them out for everything. Text cells that look like spreadsheet
+ *       formulas are prefixed with an apostrophe. At most 100,000 rows per export.
+ *     tags: [Agent]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: from
+ *         schema: { type: string, example: "2026-10-01" }
+ *       - in: query
+ *         name: to
+ *         schema: { type: string, example: "2026-10-15" }
+ *       - in: query
+ *         name: status
+ *         schema: { type: string, enum: [pending, success, failed, clarification] }
+ *       - in: query
+ *         name: search
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: CSV file
+ *         content:
+ *           text/csv:
+ *             schema:
+ *               type: string
+ *       400:
+ *         description: Invalid date or range
+ *       401:
+ *         description: Unauthorized
+ */
+
+/**
+ * @swagger
  * /api/v1/agent/logs/{requestId}/client-latency:
  *   patch:
  *     summary: Report the end-to-end latency measured in the browser

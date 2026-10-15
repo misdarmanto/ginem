@@ -1,4 +1,4 @@
-import { Op, fn, col, type WhereOptions } from 'sequelize'
+import { Op, fn, col, where as whereFn, type WhereOptions } from 'sequelize'
 import { StatusCodes } from 'http-status-codes'
 
 import {
@@ -11,6 +11,7 @@ import {
 } from '../../models/AgentLogModel'
 import type {
   IAgentLogSummaryQuery,
+  IExportAgentLogs,
   IFindAllAgentLogs
 } from '../../schemas/AgentLogSchema'
 import { AppError } from '../../utilities/AppError'
@@ -73,25 +74,36 @@ function mergeToolCalls(trace: ChatQueryTrace | undefined): IAgentToolCall[] | n
   })
 }
 
+const EXPORT_BATCH_SIZE = 500
+/** Upper bound for one export, so a huge range cannot tie up the server. */
+export const EXPORT_MAX_ROWS = 100_000
+
 function toLikePattern(search: string): string {
   return `%${search.replace(/[\\%_]/g, '\\$&')}%`
 }
 
 export class AgentLogService {
   private static buildWhere(
-    filters: Partial<Pick<IFindAllAgentLogs, 'status' | 'search'>>,
+    filters: Partial<Pick<IExportAgentLogs, 'status' | 'search' | 'from' | 'to'>>,
     viewer: AgentViewer
   ): WhereOptions<IAgentLogAttributes> {
-    const where: WhereOptions<IAgentLogAttributes> = { deleted: 0 }
+    const where: Record<string | symbol, unknown> = { deleted: 0 }
 
     if (viewer.role !== 'admin') where.userId = viewer.userId
     if (filters.status != null) where.status = filters.status
     if (filters.search != null) where.command = { [Op.like]: toLikePattern(filters.search) }
 
-    return where
+    // Compare calendar dates as stored (WIB), so a day means the Indonesian day.
+    const dateBounds = [
+      filters.from != null && whereFn(fn('DATE', col('created_at')), Op.gte, filters.from),
+      filters.to != null && whereFn(fn('DATE', col('created_at')), Op.lte, filters.to)
+    ].filter((bound) => bound !== false)
+    if (dateBounds.length > 0) where[Op.and] = dateBounds
+
+    return where as WhereOptions<IAgentLogAttributes>
   }
 
-  private static toPlain(row: { get: (options: { plain: true }) => IAgentLogAttributes }) {
+  static toPlain(row: { get: (options: { plain: true }) => IAgentLogAttributes }) {
     const plain = row.get({ plain: true })
     return {
       ...plain,
@@ -182,6 +194,32 @@ export class AgentLogService {
       if (serviceError instanceof AppError) throw serviceError
       logger.error(`[AgentLogService] findAll failed: ${String(serviceError)}`)
       throw new AppError('Failed to fetch agent logs', StatusCodes.INTERNAL_SERVER_ERROR)
+    }
+  }
+
+  /**
+   * Every matching log, oldest first, in batches so a large range never sits in memory at once.
+   * Stops after EXPORT_MAX_ROWS.
+   */
+  static async *iterateForExport(
+    filters: IExportAgentLogs,
+    viewer: AgentViewer
+  ): AsyncGenerator<ReturnType<typeof AgentLogService.toPlain>[]> {
+    const base = this.buildWhere(filters, viewer)
+    let cursor = 0
+    let exported = 0
+
+    while (exported < EXPORT_MAX_ROWS) {
+      const rows = await AgentLogModel.findAll({
+        where: { ...base, agentLogId: { [Op.gt]: cursor } },
+        order: [['agentLogId', 'ASC']],
+        limit: Math.min(EXPORT_BATCH_SIZE, EXPORT_MAX_ROWS - exported)
+      })
+      if (rows.length === 0) return
+
+      cursor = rows[rows.length - 1].agentLogId
+      exported += rows.length
+      yield rows.map((row) => this.toPlain(row))
     }
   }
 
