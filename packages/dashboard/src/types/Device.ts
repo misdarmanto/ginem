@@ -4,7 +4,8 @@ export interface IDevice extends IRoot {
   deviceId: number;
   deviceToken: string;
   deviceName: string;
-  deviceType: "sensor" | "actuator" | "hybrid";
+  deviceDescription?: string;
+  deviceType: "sensor" | "actuator";
   deviceStatus: "online" | "offline";
   deviceFirmwareVersion?: string;
   deviceMetadata?: object;

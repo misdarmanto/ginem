@@ -2,7 +2,7 @@
  * @swagger
  * tags:
  *   name: DEVICES
- *   description: Device management (sensor, actuator, hybrid)
+ *   description: Device management (sensor, actuator)
  */
 
 /**
@@ -23,7 +23,7 @@
  *           example: Measures ambient temperature in the living room
  *         deviceType:
  *           type: string
- *           enum: [sensor, actuator, hybrid]
+ *           enum: [sensor, actuator]
  *           example: sensor
  *         deviceStatus:
  *           type: string
@@ -50,7 +50,7 @@
  * /api/v1/devices:
  *   post:
  *     summary: Create new device
- *     description: Register a new device (sensor / actuator / hybrid)
+ *     description: Register a new device (sensor / actuator)
  *     tags: [DEVICES]
  *     requestBody:
  *       required: true
@@ -70,7 +70,7 @@
  *                 example: Bedroom ceiling lamp controlled via MQTT
  *               deviceType:
  *                 type: string
- *                 enum: [sensor, actuator, hybrid]
+ *                 enum: [sensor, actuator]
  *                 example: actuator
  *               deviceFirmwareVersion:
  *                 type: string

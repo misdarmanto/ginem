@@ -18,6 +18,14 @@ describe('DeviceSchema', () => {
       expect(result.deviceType).toBe('actuator')
     })
 
+    it.each([['sensor'], ['actuator']])('accepts the %s type', (deviceType) => {
+      expect(createDeviceSchema.safeParse({ deviceName: 'Device', deviceType }).success).toBe(true)
+    })
+
+    it.each([['hybrid'], ['gateway'], ['']])('rejects the %p type', (deviceType) => {
+      expect(createDeviceSchema.safeParse({ deviceName: 'Device', deviceType }).success).toBe(false)
+    })
+
     it('accepts optional deviceDescription', () => {
       const result = createDeviceSchema.parse({
         deviceName: 'Living Room Light',
@@ -38,7 +46,30 @@ describe('DeviceSchema', () => {
     })
   })
 
+  describe('deviceDescription word limit', () => {
+    const base = { deviceName: 'Relay', deviceType: 'actuator' as const }
+    const words = (n: number) => Array.from({ length: n }, () => 'word').join(' ')
+
+    it('accepts 100 words and rejects 101', () => {
+      expect(
+        createDeviceSchema.safeParse({ ...base, deviceDescription: words(100) }).success
+      ).toBe(true)
+      expect(
+        createDeviceSchema.safeParse({ ...base, deviceDescription: words(101) }).success
+      ).toBe(false)
+    })
+  })
+
   describe('updateDeviceSchema', () => {
+    it('rejects changing a device to the removed hybrid type', () => {
+      expect(updateDeviceSchema.safeParse({ deviceId: 1, deviceType: 'hybrid' }).success).toBe(false)
+    })
+
+    it('still accepts changing between sensor and actuator', () => {
+      expect(updateDeviceSchema.safeParse({ deviceId: 1, deviceType: 'sensor' }).success).toBe(true)
+      expect(updateDeviceSchema.safeParse({ deviceId: 1, deviceType: 'actuator' }).success).toBe(true)
+    })
+
     it('requires positive deviceId', () => {
       const result = updateDeviceSchema.safeParse({
         deviceId: 0,

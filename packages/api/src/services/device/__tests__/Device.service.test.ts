@@ -1,10 +1,15 @@
 import { StatusCodes } from 'http-status-codes'
 import { DeviceModel } from '../../../models/DeviceModel'
 import { DeviceService } from '../Device.service'
+import { DeviceIndexService } from '../DeviceIndex.service'
 
 jest.mock('../../../utilities/logger', () => ({
   __esModule: true,
   default: { error: jest.fn(), info: jest.fn(), warn: jest.fn() }
+}))
+
+jest.mock('../DeviceIndex.service', () => ({
+  DeviceIndexService: { index: jest.fn(), remove: jest.fn() }
 }))
 
 jest.mock('uuid', () => ({
@@ -63,12 +68,15 @@ describe('DeviceService', () => {
   describe('create', () => {
     it('creates device with generated token', async () => {
       mockedDeviceModel.findOne.mockResolvedValue(null)
-      mockedDeviceModel.create.mockResolvedValue({} as never)
+      const created = { deviceId: 3 }
+      mockedDeviceModel.create.mockResolvedValue(created as never)
 
       await DeviceService.create({
         deviceName: 'Relay',
         deviceType: 'actuator'
       })
+
+      expect(DeviceIndexService.index).toHaveBeenCalledWith(created)
 
       expect(mockedDeviceModel.create).toHaveBeenCalledWith(
         expect.objectContaining({

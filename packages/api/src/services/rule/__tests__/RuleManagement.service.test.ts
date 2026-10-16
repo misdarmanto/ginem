@@ -35,9 +35,11 @@ const logger = jest.requireMock('../../../utilities/logger').default
 
 const SENSOR = { deviceId: 10, deviceName: 'Temp Sensor', deviceType: 'sensor' }
 const ACTUATOR = { deviceId: 20, deviceName: 'Fan Relay', deviceType: 'actuator' }
+const LEGACY_HYBRID = { deviceId: 30, deviceName: 'Old Gate', deviceType: 'hybrid' }
 const devices: Record<string, unknown> = {
   [SENSOR.deviceName]: SENSOR,
-  [ACTUATOR.deviceName]: ACTUATOR
+  [ACTUATOR.deviceName]: ACTUATOR,
+  [LEGACY_HYBRID.deviceName]: LEGACY_HYBRID
 }
 
 function ruleRow(ruleId: number, withTrigger = true, overrides: Record<string, unknown> = {}) {
@@ -201,6 +203,31 @@ describe('RuleManagementService.create', () => {
 
     expect((error as AppError).statusCode).toBe(StatusCodes.BAD_REQUEST)
     expect(RuleModel.create).not.toHaveBeenCalled()
+  })
+
+  it('rejects a device of the removed hybrid type as trigger and as action target', async () => {
+    const asTrigger = await RuleManagementService.create(
+      createPayload({ trigger: { deviceName: LEGACY_HYBRID.deviceName, metric: 'temperature' } })
+    ).catch((e: unknown) => e)
+    const asAction = await RuleManagementService.create(
+      createPayload({ actions: [{ deviceName: LEGACY_HYBRID.deviceName, state: 'on' }] })
+    ).catch((e: unknown) => e)
+
+    expect((asTrigger as AppError).statusCode).toBe(StatusCodes.BAD_REQUEST)
+    expect((asAction as AppError).statusCode).toBe(StatusCodes.BAD_REQUEST)
+    expect(RuleModel.create).not.toHaveBeenCalled()
+  })
+
+  it('says which device type each side of a rule needs', async () => {
+    const trigger = await RuleManagementService.create(
+      createPayload({ trigger: { deviceName: ACTUATOR.deviceName, metric: 'temperature' } })
+    ).catch((e: unknown) => e)
+    const action = await RuleManagementService.create(
+      createPayload({ actions: [{ deviceName: SENSOR.deviceName, state: 'on' }] })
+    ).catch((e: unknown) => e)
+
+    expect((trigger as AppError).message).toContain('Use a sensor.')
+    expect((action as AppError).message).toContain('Use an actuator.')
   })
 
   it('rejects a sensor as action target with 400', async () => {
