@@ -9,7 +9,7 @@ import {
   type IndexingSourceType
 } from '../../models/IndexingModel'
 import { AppError } from '../../utilities/AppError'
-import { type ICreateIndexing, type IFindAllIndexing } from '../../schemas/IndexingSchema'
+import { type IIndexingDocument, type IFindAllIndexing } from '../../schemas/IndexingSchema'
 
 export interface IndexingDocument {
   content: string
@@ -18,7 +18,7 @@ export interface IndexingDocument {
 
 export class PineconeBackupService {
   static async saveIndexingBackup(
-    documents: ICreateIndexing[],
+    documents: IIndexingDocument[],
     sourceType: IndexingSourceType = 'json'
   ): Promise<void> {
     try {

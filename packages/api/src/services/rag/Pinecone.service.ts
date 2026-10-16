@@ -5,7 +5,7 @@ import { StatusCodes } from 'http-status-codes'
 import { Pinecone, type IndexModel } from '@pinecone-database/pinecone'
 import { appConfigs } from '../../configs/appConfig'
 import { AppError } from '../../utilities/AppError'
-import { type ICreateIndexing } from '../../schemas/IndexingSchema'
+import { type IIndexingDocument } from '../../schemas/IndexingSchema'
 
 export interface RagDocument {
   content: string
@@ -180,7 +180,7 @@ class PineconeService {
     }
   }
 
-  async addDocuments(documents: ICreateIndexing[]): Promise<void> {
+  async addDocuments(documents: IIndexingDocument[]): Promise<void> {
     try {
       if (documents.length === 0) return
 
@@ -228,32 +228,6 @@ class PineconeService {
       logger.error(`[PineconeService] addDocuments failed: ${String(error)}`)
       throw new AppError(
         'Failed to add documents to Pinecone',
-        StatusCodes.INTERNAL_SERVER_ERROR
-      )
-    }
-  }
-
-  async upsertById(id: string, text: string, source: string): Promise<void> {
-    try {
-      const index = await this.getIndex()
-      const [vector] = await this.embedTexts([text])
-      await index.upsert([{ id, values: vector, metadata: { content: text, source } }])
-    } catch (error) {
-      if (error instanceof AppError) throw error
-      logger.error(`[PineconeService] upsertById failed: ${String(error)}`)
-      throw new AppError('Failed to upsert to Pinecone', StatusCodes.INTERNAL_SERVER_ERROR)
-    }
-  }
-
-  async deleteById(id: string): Promise<void> {
-    try {
-      const index = await this.getIndex()
-      await index.deleteOne(id)
-    } catch (error) {
-      if (error instanceof AppError) throw error
-      logger.error(`[PineconeService] deleteById failed: ${String(error)}`)
-      throw new AppError(
-        'Failed to delete from Pinecone',
         StatusCodes.INTERNAL_SERVER_ERROR
       )
     }
