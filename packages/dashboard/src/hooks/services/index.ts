@@ -19,8 +19,13 @@ export {
   useRuleDetailQuery,
   useRuleExecutionLogsQuery,
   useDeleteRuleMutation,
+  useDeleteRulesMutation,
 } from "./useRules";
-export { useSchedulerListQuery, useDeleteSchedulerLogMutation } from "./useScheduler";
+export {
+  useSchedulerListQuery,
+  useDeleteSchedulerLogMutation,
+  useDeleteSchedulerLogsMutation,
+} from "./useScheduler";
 export {
   useEmbeddingListQuery,
   useCreateEmbeddingMutation,

@@ -1,9 +1,17 @@
 import Box from "@mui/material/Box";
-import { useCallback, useEffect, useState } from "react";
-import { useRuleListQuery, useDeleteRuleMutation } from "@/hooks/services";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  useRuleListQuery,
+  useDeleteRuleMutation,
+  useDeleteRulesMutation,
+} from "@/hooks/services";
+import BulkDeleteDialog from "@/components/common/BulkDeleteDialog";
+import SelectionBar from "@/components/common/SelectionBar";
+import { useRowSelection } from "@/hooks/useRowSelection";
 import {
   Alert,
   Button,
+  Checkbox,
   Chip,
   Divider,
   FormControl,
@@ -224,6 +232,8 @@ export default function ListRuleView() {
       isActive,
     });
   const deleteRule = useDeleteRuleMutation();
+  const deleteRules = useDeleteRulesMutation();
+  const [openBulkDeleteModal, setOpenBulkDeleteModal] = useState(false);
 
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [ruleToDelete, setRuleToDelete] = useState<{
@@ -231,9 +241,12 @@ export default function ListRuleView() {
     ruleName: string;
   } | null>(null);
 
-  const tableData = data?.items ?? [];
+  const tableData = useMemo(() => data?.items ?? [], [data?.items]);
   const rowCount = data?.totalItems ?? 0;
   const loading = isFetching;
+  const selection = useRowSelection(
+    useMemo(() => tableData.map((row: IRule) => row.ruleId), [tableData]),
+  );
   const lastUpdated = dataUpdatedAt ? new Date(dataUpdatedAt) : null;
   const errorMessage = isError
     ? "Failed to load rules. Please try again."
@@ -268,6 +281,18 @@ export default function ListRuleView() {
       setOpenDeleteModal(false);
       setRuleToDelete(null);
     }
+  };
+
+  const handleConfirmBulkDelete = async () => {
+    if (deleteRules.isPending) return;
+    try {
+      await deleteRules.mutateAsync(selection.selectedIds);
+    } catch (error: unknown) {
+      console.error(error);
+      void refetch();
+    }
+    selection.clear();
+    setOpenBulkDeleteModal(false);
   };
 
   const handleConfirmDelete = async () => {
@@ -327,6 +352,12 @@ export default function ListRuleView() {
           onReset={handleReset}
         />
 
+        <SelectionBar
+          count={selection.selectedIds.length}
+          onClear={selection.clear}
+          onDelete={() => setOpenBulkDeleteModal(true)}
+        />
+
         {loading && tableData.length === 0 ? (
           <Typography color="text.secondary" sx={{ mt: 3 }}>
             Loading...
@@ -348,6 +379,15 @@ export default function ListRuleView() {
             <Table size="small" stickyHeader sx={{ minWidth: 1280 }}>
               <TableHead>
                 <TableRow>
+                  <TableCell padding="checkbox">
+                    <Checkbox
+                      size="small"
+                      checked={selection.allSelected}
+                      indeterminate={selection.someSelected}
+                      onChange={selection.toggleAll}
+                      inputProps={{ "aria-label": "Select all rules" }}
+                    />
+                  </TableCell>
                   <TableCell>ID</TableCell>
                   <TableCell>Rule</TableCell>
                   <TableCell>Status</TableCell>
@@ -369,6 +409,16 @@ export default function ListRuleView() {
                       hover
                       sx={{ "& td": { verticalAlign: "top" } }}
                     >
+                      <TableCell padding="checkbox">
+                        <Checkbox
+                          size="small"
+                          checked={selection.selectedIds.includes(row.ruleId)}
+                          onChange={() => selection.toggle(row.ruleId)}
+                          inputProps={{
+                            "aria-label": `Select rule ${row.ruleId}`,
+                          }}
+                        />
+                      </TableCell>
                       <TableCell>{row.ruleId}</TableCell>
                       <TableCell sx={{ minWidth: 220, maxWidth: 320 }}>
                         <Typography variant="body2" fontWeight={700}>
@@ -470,6 +520,15 @@ export default function ListRuleView() {
           </Stack>
         ) : null}
       </Paper>
+
+      <BulkDeleteDialog
+        open={openBulkDeleteModal}
+        loading={deleteRules.isPending}
+        count={selection.selectedIds.length}
+        itemLabel={selection.selectedIds.length === 1 ? "rule" : "rules"}
+        onClose={() => !deleteRules.isPending && setOpenBulkDeleteModal(false)}
+        onConfirm={handleConfirmBulkDelete}
+      />
 
       <DeleteModalRule
         open={openDeleteModal}

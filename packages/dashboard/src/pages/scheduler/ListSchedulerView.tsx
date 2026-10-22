@@ -1,11 +1,19 @@
 import Box from "@mui/material/Box";
-import { useEffect, useState } from "react";
-import { useSchedulerListQuery, useDeleteSchedulerLogMutation } from "@/hooks/services";
+import { useEffect, useMemo, useState } from "react";
+import {
+  useSchedulerListQuery,
+  useDeleteSchedulerLogMutation,
+  useDeleteSchedulerLogsMutation,
+} from "@/hooks/services";
+import BulkDeleteDialog from "@/components/common/BulkDeleteDialog";
+import SelectionBar from "@/components/common/SelectionBar";
+import { useRowSelection } from "@/hooks/useRowSelection";
 import type { SchedulerLogItem } from "@/services/schedulerService";
 import DeleteModalScheduler from "@/features/scheduler/components/DeleteModalScheduler";
 import {
   Alert,
   Button,
+  Checkbox,
   Chip,
   Divider,
   IconButton,
@@ -76,6 +84,8 @@ export default function ListSchedulerView() {
       search,
     });
   const deleteSchedulerLog = useDeleteSchedulerLogMutation();
+  const deleteSchedulerLogs = useDeleteSchedulerLogsMutation();
+  const [openBulkDeleteModal, setOpenBulkDeleteModal] = useState(false);
 
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{
@@ -83,9 +93,15 @@ export default function ListSchedulerView() {
     jobId: string;
   } | null>(null);
 
-  const tableData = data?.items ?? [];
+  const tableData = useMemo(() => data?.items ?? [], [data?.items]);
   const rowCount = data?.totalItems ?? 0;
   const loading = isFetching;
+  const selection = useRowSelection(
+    useMemo(
+      () => tableData.map((row: SchedulerLogItem) => row.schedulerLogId),
+      [tableData],
+    ),
+  );
   const lastUpdated = dataUpdatedAt ? new Date(dataUpdatedAt) : null;
   const errorMessage = isError
     ? "Failed to load scheduler logs. Please try again."
@@ -214,6 +230,18 @@ export default function ListSchedulerView() {
     }
   };
 
+  const handleConfirmBulkDelete = async () => {
+    if (deleteSchedulerLogs.isPending) return;
+    try {
+      await deleteSchedulerLogs.mutateAsync(selection.selectedIds);
+    } catch (error: unknown) {
+      console.error(error);
+      void refetch();
+    }
+    selection.clear();
+    setOpenBulkDeleteModal(false);
+  };
+
   const handleConfirmDelete = async () => {
     if (!itemToDelete || deleteSchedulerLog.isPending) return;
     try {
@@ -265,6 +293,12 @@ export default function ListSchedulerView() {
         <Box sx={{ width: "100%" }}>
           <CustomToolbar />
 
+          <SelectionBar
+            count={selection.selectedIds.length}
+            onClear={selection.clear}
+            onDelete={() => setOpenBulkDeleteModal(true)}
+          />
+
           {(!loading && tableData.length === 0) || rowCount === 0 ? (
             <NoRowsOverlay
               title="No scheduler logs"
@@ -282,6 +316,17 @@ export default function ListSchedulerView() {
               <Table size="small" stickyHeader sx={{ minWidth: 1080 }}>
                 <TableHead>
                   <TableRow>
+                    <TableCell padding="checkbox">
+                      <Checkbox
+                        size="small"
+                        checked={selection.allSelected}
+                        indeterminate={selection.someSelected}
+                        onChange={selection.toggleAll}
+                        inputProps={{
+                          "aria-label": "Select all scheduler logs",
+                        }}
+                      />
+                    </TableCell>
                     <TableCell>Job ID</TableCell>
                     <TableCell>Type</TableCell>
                     <TableCell>Device</TableCell>
@@ -305,6 +350,20 @@ export default function ListSchedulerView() {
                           "&:last-child td, &:last-child th": { border: 0 },
                         }}
                       >
+                        <TableCell padding="checkbox">
+                          <Checkbox
+                            size="small"
+                            checked={selection.selectedIds.includes(
+                              row.schedulerLogId,
+                            )}
+                            onChange={() =>
+                              selection.toggle(row.schedulerLogId)
+                            }
+                            inputProps={{
+                              "aria-label": `Select scheduler log ${row.schedulerLogId}`,
+                            }}
+                          />
+                        </TableCell>
                         <TableCell>
                           <Typography
                             variant="body2"
@@ -418,6 +477,21 @@ export default function ListSchedulerView() {
           )}
         </Box>
       </Paper>
+
+      <BulkDeleteDialog
+        open={openBulkDeleteModal}
+        loading={deleteSchedulerLogs.isPending}
+        count={selection.selectedIds.length}
+        itemLabel={
+          selection.selectedIds.length === 1
+            ? "scheduler log"
+            : "scheduler logs"
+        }
+        onClose={() =>
+          !deleteSchedulerLogs.isPending && setOpenBulkDeleteModal(false)
+        }
+        onConfirm={handleConfirmBulkDelete}
+      />
 
       <DeleteModalScheduler
         open={openDeleteModal}
