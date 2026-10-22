@@ -14,11 +14,11 @@ import {
 } from "@mui/material";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 import CloseIcon from "@mui/icons-material/Close";
-import GraphicEqIcon from "@mui/icons-material/GraphicEq";
 import SendIcon from "@mui/icons-material/Send";
 import { useTranslation } from "react-i18next";
 import { useChatSocket } from "@/hooks/services";
 import { useRealtimeVoice } from "../voice/useRealtimeVoice";
+import PixelAvatar from "./PixelAvatar";
 import VoiceOverlay from "./VoiceOverlay";
 
 type ChatRole = "user" | "assistant" | "system";
@@ -182,13 +182,14 @@ export function ChatWidget() {
               sx={{
                 width: 48,
                 height: 48,
-                bgcolor: "primary.main",
-                color: "primary.contrastText",
+                bgcolor: "background.paper",
+                border: "1px solid",
+                borderColor: "divider",
                 boxShadow: 8,
-                "&:hover": { bgcolor: "primary.dark" },
+                "&:hover": { bgcolor: "action.hover" },
               }}
             >
-              <GraphicEqIcon />
+              <PixelAvatar size={32} expression="happy" still />
             </IconButton>
           </Tooltip>
           </Stack>
