@@ -1,5 +1,6 @@
 import { useTableDataQuery } from "@/hooks/api";
 import { useServiceDeleteMutation } from "@/hooks/api/useApiMutations";
+import { removeAll } from "@/services/bulkDelete";
 import {
   SCHEDULER_API,
   schedulerService,
@@ -23,4 +24,14 @@ export function useDeleteSchedulerLogMutation() {
     invalidateTablePaths: [SCHEDULER_API.list],
     successMessage: "Scheduler log deleted.",
   });
+}
+
+export function useDeleteSchedulerLogsMutation() {
+  return useServiceDeleteMutation(
+    (ids: number[]) => removeAll(ids, schedulerService.delete),
+    {
+      invalidateTablePaths: [SCHEDULER_API.list],
+      successMessage: "Selected scheduler logs deleted.",
+    },
+  );
 }

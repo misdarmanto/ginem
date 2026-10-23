@@ -10,6 +10,7 @@ import {
   type IFindAllDevice,
   type IUpdateDevice
 } from '../../schemas/DeviceSchema'
+import { DeviceIndexService } from './DeviceIndex.service'
 import { v4 as uuidv4 } from 'uuid'
 import { Op, type WhereOptions, type Order } from 'sequelize'
 
@@ -123,11 +124,12 @@ export class DeviceService {
         throw AppError.conflict('Device already exists')
       }
 
-      await DeviceModel.create({
+      const created = await DeviceModel.create({
         ...payload,
         deviceStatus: payload.deviceStatus ?? 'offline',
         deviceToken: `fck_${uuidv4()}`
       })
+      await DeviceIndexService.index(created)
     } catch (serviceError) {
       if (serviceError instanceof AppError) throw serviceError
       logger.error(`[DeviceService] create failed: ${String(serviceError)}`)
@@ -170,6 +172,17 @@ export class DeviceService {
       if (affectedRows === 0) {
         throw AppError.notFound('Device not found')
       }
+
+      const affectsIndexedContent =
+        payload.deviceName != null ||
+        payload.deviceDescription != null ||
+        payload.deviceMetadata != null
+      if (affectsIndexedContent) {
+        const updated = await DeviceModel.findOne({
+          where: { deleted: 0, deviceId: payload.deviceId }
+        })
+        if (updated != null) await DeviceIndexService.index(updated)
+      }
     } catch (serviceError) {
       if (serviceError instanceof AppError) throw serviceError
       logger.error(`[DeviceService] update failed: ${String(serviceError)}`)
@@ -188,6 +201,7 @@ export class DeviceService {
       }
 
       await result.destroy()
+      await DeviceIndexService.remove(deviceId)
     } catch (serviceError) {
       if (serviceError instanceof AppError) throw serviceError
       logger.error(`[DeviceService] remove failed: ${String(serviceError)}`)

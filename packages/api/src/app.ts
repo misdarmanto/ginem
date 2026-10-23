@@ -9,6 +9,7 @@ import { MQTTService } from './services/mqtt/MQTT.service'
 import { TelemetryService } from './services/mqtt/Telemetry.service'
 import { initializeDeviceSchedule } from './services/mcp/DeviceSchedule.service'
 import { ChatMessageBroker } from './services/rabbitmq/ChatMessageBroker.service'
+import { DeviceIndexService } from './services/device'
 import { RuleManagementService } from './services/rule'
 import logger from './utilities/logger'
 
@@ -20,6 +21,9 @@ TelemetryService.initialize()
 void initializeDeviceSchedule()
 void RuleManagementService.refreshCache().catch((error) => {
   logger.error(`[app] Rule cache load failed: ${String(error)}`)
+})
+void DeviceIndexService.reindexAll().catch((error) => {
+  logger.error(`[app] Device reindex failed: ${String(error)}`)
 })
 void ChatMessageBroker.initialize().catch((error) => {
   logger.error(`[app] ChatMessageBroker initialize failed: ${String(error)}`)

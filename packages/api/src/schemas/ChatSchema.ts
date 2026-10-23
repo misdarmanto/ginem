@@ -11,6 +11,16 @@ export const chatSchema = z
       .describe(
         'Optional conversation session id. Defaults to web:{userId} when omitted.'
       ),
+    requestId: z
+      .string()
+      .min(1)
+      .max(191)
+      .optional()
+      .describe('Client-generated id; lets the browser report its own end-to-end latency'),
+    channel: z
+      .enum(['chat', 'voice'])
+      .optional()
+      .describe('Where the command came from; voice when spoken'),
     withAudio: z
       .boolean()
       .optional()

@@ -1,4 +1,5 @@
 import { api, apiClient } from "./api";
+import { agentService } from "./agentService";
 
 export const VOICE_API = {
   session: "/chat/voice/session",
@@ -59,7 +60,19 @@ export const voiceService = {
 
   /** Runs a voice request through the same chat agent (and memory) as typed chat. */
   askAssistant: async (message: string): Promise<string> => {
-    const body = await apiClient.post<ChatReplyBody>(VOICE_API.chat, { message });
+    const requestId = crypto.randomUUID();
+    const sentAt = performance.now();
+
+    const body = await apiClient.post<ChatReplyBody>(VOICE_API.chat, {
+      message,
+      requestId,
+      channel: "voice",
+    });
+
+    void agentService.reportClientLatency(
+      requestId,
+      Math.round(performance.now() - sentAt),
+    );
     return body.data?.reply ?? "";
   },
 };

@@ -14,6 +14,7 @@ import {
   Typography,
 } from "@mui/material";
 import type React from "react";
+import { DEVICE_DESCRIPTION_MAX_WORDS, countWords } from "../deviceDescription";
 
 const FIRMWARE_OPTIONS = [
   "",
@@ -24,12 +25,13 @@ const FIRMWARE_OPTIONS = [
   "v2.2.0",
   "v3.0.0",
 ] as const;
-const DEVICE_TYPE_OPTIONS = ["sensor", "actuator", "hybrid"] as const;
+const DEVICE_TYPE_OPTIONS = ["sensor", "actuator"] as const;
 const DEVICE_STATUS_OPTIONS = ["online", "offline"] as const;
 
 export type DeviceCreateFormState = {
   deviceName: string;
   deviceType: string;
+  deviceDescription: string;
   deviceFirmwareVersion: string;
   deviceMetadataRoom: string;
   deviceMetadataVoltage: string;
@@ -38,6 +40,7 @@ export type DeviceCreateFormState = {
 export type DeviceEditFormState = {
   deviceName: string;
   deviceStatus: string;
+  deviceDescription: string;
   deviceFirmwareVersion: string;
   deviceMetadataRoom: string;
   deviceMetadataVoltage: string;
@@ -85,6 +88,9 @@ export default function FormDevice({
       ...patch,
     }) as DeviceCreateFormState & DeviceEditFormState);
   };
+
+  const descriptionWords = countWords(form.deviceDescription);
+  const descriptionTooLong = descriptionWords > DEVICE_DESCRIPTION_MAX_WORDS;
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
@@ -146,6 +152,18 @@ export default function FormDevice({
               </Select>
             </FormControl>
           )}
+          <TextField
+            size="small"
+            label="Description"
+            fullWidth
+            multiline
+            minRows={3}
+            value={form.deviceDescription}
+            onChange={(e) => patchForm({ deviceDescription: e.target.value })}
+            placeholder="e.g. Detects smoke in the kitchen and triggers the alarm"
+            error={descriptionTooLong}
+            helperText={`${descriptionWords}/${DEVICE_DESCRIPTION_MAX_WORDS} words`}
+          />
           <FormControl size="small" fullWidth>
             <InputLabel id="device-firmware-label">Firmware Version</InputLabel>
             <Select
@@ -201,7 +219,11 @@ export default function FormDevice({
         <Button onClick={onClose} disabled={submitLoading}>
           Cancel
         </Button>
-        <Button variant="contained" onClick={onSubmit} disabled={submitLoading}>
+        <Button
+          variant="contained"
+          onClick={onSubmit}
+          disabled={submitLoading || descriptionTooLong}
+        >
           {mode === "edit"
             ? submitLoading
               ? "Updating..."

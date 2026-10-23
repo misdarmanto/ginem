@@ -1,6 +1,7 @@
 import type { ChatAudioPayload } from '../chat'
 
 export type ChatMessageSource = 'web' | 'whatsapp'
+export type ChatChannel = 'chat' | 'voice'
 
 export interface WhatsappQuotedKey {
   remoteJid: string
@@ -17,6 +18,13 @@ export interface WhatsappChatMeta {
 
 export interface ChatQueueRequest {
   messageId: string
+  /** Id the client chose for this command, used to match its own latency measurement. */
+  requestId?: string
+  channel?: ChatChannel
+  /** ms epoch when the server first saw the command. */
+  receivedAt: number
+  /** ms epoch when it was put on the queue. */
+  enqueuedAt: number
   source: ChatMessageSource
   message: string
   withAudio?: boolean

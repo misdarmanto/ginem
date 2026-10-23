@@ -43,11 +43,11 @@
     "devices": "Devices",
     "rules": "Rules",
     "scheduler": "Scheduler",
-    "embedding": "Embedding",
     "logger": "Logger",
     "admin": "Admin",
     "settings": "Settings",
-    "profile": "Profile"
+    "profile": "Profile",
+    "agent": "Agent"
   },
   "header": {
     "searchPlaceholder": "Search pages…",
@@ -60,7 +60,9 @@
     "openMenu": "Open menu",
     "closeMenu": "Close menu",
     "logout": "Logout",
-    "there": "there"
+    "there": "there",
+    "mainNavigation": "Main navigation",
+    "notificationsUnread": "Notifications ({{count}} new)"
   },
   "auth": {
     "welcomeBack": "Welcome back",
@@ -187,9 +189,12 @@
   },
   "notificationsPanel": {
     "title": "Notifications",
-    "subtitle": "Latest updates and activity",
+    "subtitle": "System events from the logger",
     "close": "Close notifications",
-    "empty": "No notifications yet."
+    "empty": "No system events yet.",
+    "error": "Could not load notifications.",
+    "unread": "New",
+    "viewAll": "View all in Logger"
   },
   "devices": {
     "title": "Devices",
@@ -208,5 +213,105 @@
     "chartWillAppear": "Chart will appear when logs arrive",
     "update": "Update",
     "unknownDevice": "Unknown"
+  },
+  "agent": {
+    "title": "Agent",
+    "subtitle": "The AI agent's command log and the knowledge base (embeddings) it draws on.",
+    "status": {
+      "success": "Success",
+      "failed": "Failed",
+      "clarification": "Clarification",
+      "pending": "Judging…"
+    },
+    "channel": {
+      "chat": "Chat",
+      "voice": "Voice",
+      "whatsapp": "WhatsApp"
+    },
+    "columns": {
+      "time": "Time",
+      "command": "Command",
+      "via": "Via",
+      "status": "Status",
+      "latency": "E2E latency",
+      "inputTokens": "Input",
+      "outputTokens": "Output",
+      "totalTokens": "Total",
+      "cost": "Est. cost",
+      "model": "Model"
+    },
+    "filters": {
+      "status": "Filter by status",
+      "allStatuses": "All statuses",
+      "search": "Search commands…",
+      "searchButton": "Search"
+    },
+    "summary": {
+      "commands": "Commands",
+      "outcomes": "{{success}} success · {{failed}} failed · {{clarification}} clarification",
+      "avgLatency": "Average E2E latency",
+      "latencyBrowser": "Measured in the browser",
+      "latencyServer": "Server-side (no browser data yet)",
+      "tokens": "Total tokens",
+      "tokenSplit": "{{input}} in · {{output}} out",
+      "cost": "Estimated cost",
+      "costNote": "LLM agent only, list prices"
+    },
+    "latencyBrowserHint": "From the browser sending the command until the reply arrived",
+    "latencyServerHint": "Measured on the server (the browser did not report)",
+    "empty": "No commands yet. Send one from the chat.",
+    "detail": {
+      "title": "Command details",
+      "close": "Close",
+      "command": "Command",
+      "status": "Outcome",
+      "reply": "Reply",
+      "timing": "Latency",
+      "e2eBrowser": "End to end (browser)",
+      "e2eServer": "End to end (server)",
+      "server": "Server total",
+      "queue": "Queue wait",
+      "context": "Memory + knowledge search",
+      "llm": "LLM and tools",
+      "usage": "Usage",
+      "model": "Model",
+      "inputTokens": "Input tokens",
+      "cachedTokens": "…of which cached",
+      "outputTokens": "Output tokens",
+      "totalTokens": "Total tokens",
+      "cost": "Estimated cost",
+      "tools": "Tools used",
+      "toolOk": "OK",
+      "toolFailed": "Failed",
+      "noTools": "No tools were called."
+    },
+    "export": {
+      "button": "Export CSV",
+      "title": "Export agent log to CSV",
+      "presets": "Date range",
+      "preset": {
+        "today": "Today",
+        "yesterday": "Yesterday",
+        "thisWeek": "This week",
+        "thisMonth": "This month",
+        "all": "All time",
+        "custom": "Custom"
+      },
+      "from": "From",
+      "to": "To",
+      "summaryAll": "All logs",
+      "summaryRange": "Logs from {{from}} to {{to}} (both days included)",
+      "filterNote": "The status filter and search currently applied to the table are included.",
+      "errorIncomplete": "Pick both a start and an end date.",
+      "errorOrder": "The start date must not be after the end date.",
+      "failed": "The export failed. Please try again.",
+      "cancel": "Cancel",
+      "download": "Download CSV"
+    },
+    "tabs": {
+      "label": "Agent sections",
+      "log": "Log",
+      "embedding": "Embedding"
+    }
   }
 }

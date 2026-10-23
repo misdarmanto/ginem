@@ -4,7 +4,12 @@ import { createAgent } from 'langchain'
 
 import logger from '../../utilities/logger'
 import { AppError } from '../../utilities/AppError'
-import { LLMService } from '../llm'
+import {
+  DEFAULT_OPENAI_MODEL,
+  LLMModelService,
+  LLMService,
+  type LLMProvider
+} from '../llm'
 import { TTSService, type ChatAudioPayload } from './TTS.service'
 import {
   ChatMemoryService,
@@ -25,12 +30,12 @@ You have tools to:
 - get_last_log_by_device_name: Get the latest single log for a device by its name (deviceName).
 - get_last_10_logs_by_device_name: Get the last 10 logs (most recent first) for a device by its name (deviceName).
 - create_device_log: Create a new device log for a device; use deviceName and deviceLogData. Do NOT use for turn on/off — use set_actuator_state_by_device_name.
-- set_actuator_state_by_device_name: Turn ON or OFF an actuator by device name IMMEDIATELY. Use when the user says "hidupkan (nama device)", "matikan (nama device)", turn on, turn off, nyalakan, padamkan RIGHT NOW. Only works for devices with deviceType "actuator" or "hybrid". On → value 1, off → value 0.
+- set_actuator_state_by_device_name: Turn ON or OFF an actuator by device name IMMEDIATELY. Use when the user says "hidupkan (nama device)", "matikan (nama device)", turn on, turn off, nyalakan, padamkan RIGHT NOW. Only works for devices with deviceType "actuator". On → value 1, off → value 0.
 - schedule_actuator_state_at: Schedule actuator ON/OFF once or daily repeat (WIB). Use category once for one-time, repeat for every day at hour:minute.
 - schedule_sensor_data_at: Schedule sensor data fetch once or daily repeat (WIB).
 - get_scheduled_job_result: Get the status and result of a scheduled job by jobId.
 - list_scheduled_jobs: List recent scheduled jobs (pending, active, completed, failed).
-- create_automation_rule: Create an Event-Condition-Action automation so devices cooperate automatically (e.g. "hidupkan kipas jika suhu di atas 25"). Trigger device must be sensor/hybrid; action device(s) must be actuator/hybrid. Stores the rule; Rule Engine executes later on MQTT telemetry without calling the LLM again. Always set originalPrompt to the user message.
+- create_automation_rule: Create an Event-Condition-Action automation so devices cooperate automatically (e.g. "hidupkan kipas jika suhu di atas 25"). Trigger device must be a sensor; action device(s) must be an actuator. Stores the rule; Rule Engine executes later on MQTT telemetry without calling the LLM again. Always set originalPrompt to the user message.
 - list_automation_rules / get_automation_rule / set_automation_rule_active / delete_automation_rule: Manage stored automation rules.
 
 Important distinctions:
@@ -52,14 +57,43 @@ export interface ChatTokenUsage {
   inputTokens: number
   outputTokens: number
   totalTokens: number
+  /** Portion of inputTokens served from the provider's prompt cache (billed cheaper). */
+  cachedInputTokens: number
 }
+
+export interface ChatToolResultTrace {
+  /** Matches `ChatToolCallTrace.id`, so a call can be paired with its result. */
+  callId: string
+  name: string
+  /** False when the tool reported an error (e.g. "Device not found"). */
+  ok: boolean
+  /** Error text reported by the tool, when `ok` is false. */
+  error?: string
+  /** Raw tool output, truncated for storage. */
+  output: string
+}
+
+const TOOL_OUTPUT_MAX_CHARS = 500
+const KNOWN_PROVIDERS: readonly LLMProvider[] = ['openai', 'deepseek', 'anthropic']
+
+interface ResolvedAgent {
+  agent: AgentLike
+  /** Id of the model behind the agent, recorded in the agent log. */
+  model: string
+}
+const CUSTOM_MODEL_LABEL = 'custom'
 
 export interface ChatQueryTrace {
   toolCalls: ChatToolCallTrace[]
   /** Wall time for agent.invoke only (ms). */
   agentLatencyMs: number
+  /** Time before the LLM was called: loading chat memory and the knowledge-base search (ms). */
+  contextLatencyMs: number
   /** Summed across every LLM call made during this agent run, when providers report it. */
   tokenUsage?: ChatTokenUsage
+  toolResults: ChatToolResultTrace[]
+  /** Model that answered; `custom` when an evaluation override was supplied. */
+  model: string
 }
 
 export interface ChatQueryResponse {
@@ -140,19 +174,71 @@ export class ChatService {
     }
   }
 
-  private static resolveAgent(options?: ChatQueryOptions): AgentLike {
-    if (options?.model == null) {
-      return ChatService.defaultAgent
+  /** Agents already built for a model chosen in Settings, so each is created once. */
+  private static readonly agentsByModel = new Map<string, AgentLike>()
+
+  /**
+   * The model picked in Settings, or null to use the default: nothing selected, an unknown
+   * provider, or the lookup failed. A broken Settings row must not take chat down.
+   */
+  private static async selectedModel(): Promise<{
+    id: string
+    provider: LLMProvider
+  } | null> {
+    try {
+      const row = await LLMModelService.getSelectedModel()
+      const provider = row.provider.toLowerCase()
+      const known = KNOWN_PROVIDERS.find((candidate) => candidate === provider)
+      if (known == null) {
+        logger.warn(`[ChatService] unknown provider "${row.provider}" for model ${row.id}`)
+        return null
+      }
+      return { id: row.id, provider: known }
+    } catch (selectionError) {
+      logger.warn(`[ChatService] using default model: ${String(selectionError)}`)
+      return null
     }
-    // `as Parameters<typeof createAgent>[0]`: langchain ships dual ESM/CJS type
-    // declarations for @langchain/core, so BaseChatModel/tool types coming through
-    // this project's moduleResolution structurally mismatch createAgent's expected
-    // types even though they're the same classes at runtime.
-    return createAgent({
-      model: options.model,
-      tools: deviceTools,
-      systemPrompt: DEVICE_CHAT_SYSTEM_PROMPT
-    } as unknown as Parameters<typeof createAgent>[0]) as AgentLike
+  }
+
+  private static async resolveAgent(options?: ChatQueryOptions): Promise<ResolvedAgent> {
+    if (options?.model != null) {
+      // `as Parameters<typeof createAgent>[0]`: langchain ships dual ESM/CJS type
+      // declarations for @langchain/core, so BaseChatModel/tool types coming through
+      // this project's moduleResolution structurally mismatch createAgent's expected
+      // types even though they're the same classes at runtime.
+      return {
+        model: CUSTOM_MODEL_LABEL,
+        agent: createAgent({
+          model: options.model,
+          tools: deviceTools,
+          systemPrompt: DEVICE_CHAT_SYSTEM_PROMPT
+        } as unknown as Parameters<typeof createAgent>[0]) as AgentLike
+      }
+    }
+
+    const selected = await ChatService.selectedModel()
+    if (
+      selected == null ||
+      (selected.provider === 'openai' && selected.id === DEFAULT_OPENAI_MODEL)
+    ) {
+      return { agent: ChatService.defaultAgent, model: DEFAULT_OPENAI_MODEL }
+    }
+
+    const key = `${selected.provider}:${selected.id}`
+    let agent = ChatService.agentsByModel.get(key)
+    if (agent == null) {
+      agent = createAgent({
+        model: LLMService.create({
+          provider: selected.provider,
+          model: selected.id,
+          temperature: 0
+        }),
+        tools: deviceTools,
+        systemPrompt: DEVICE_CHAT_SYSTEM_PROMPT
+      } as unknown as Parameters<typeof createAgent>[0]) as AgentLike
+      ChatService.agentsByModel.set(key, agent)
+    }
+    return { agent, model: selected.id }
   }
 
   private static resolveMemoryScope(options?: ChatQueryOptions): ChatMemoryScope | null {
@@ -185,6 +271,7 @@ export class ChatService {
     userMessage: string,
     options?: ChatQueryOptions
   ): Promise<{ reply: string; trace?: ChatQueryTrace }> {
+    const contextStartedAt = Date.now()
     const memoryScope = ChatService.resolveMemoryScope(options)
     const history =
       memoryScope != null
@@ -202,8 +289,9 @@ export class ChatService {
       currentContent = `[Context from knowledge base]\n${contextBlock}\n\n[User question]\n${userMessage}`
     }
 
-    const agent = ChatService.resolveAgent(options)
+    const { agent, model } = await ChatService.resolveAgent(options)
     const startedAt = Date.now()
+    const contextLatencyMs = startedAt - contextStartedAt
     const result = await agent.invoke({
       messages: ChatService.toAgentMessages(history, currentContent)
     })
@@ -230,7 +318,10 @@ export class ChatService {
       reply,
       trace: {
         toolCalls: ChatService.extractToolCalls(result.messages ?? []),
+        toolResults: ChatService.extractToolResults(result.messages ?? []),
         agentLatencyMs,
+        contextLatencyMs,
+        model,
         ...(tokenUsage != null && { tokenUsage })
       }
     }
@@ -331,6 +422,49 @@ export class ChatService {
   }
 
   /**
+   * Collect what each tool returned. Tools signal failure with an `error` field in their JSON
+   * output (for example `{"error":"Device not found"}`), or LangChain marks the message errored.
+   */
+  static extractToolResults(
+    messages: Array<{
+      content?: unknown
+      name?: unknown
+      tool_call_id?: unknown
+      status?: unknown
+    }>
+  ): ChatToolResultTrace[] {
+    const results: ChatToolResultTrace[] = []
+
+    for (const message of messages) {
+      if (typeof message.tool_call_id !== 'string') continue
+
+      const output =
+        typeof message.content === 'string'
+          ? message.content
+          : JSON.stringify(message.content ?? '')
+
+      let error: string | undefined
+      try {
+        const parsed = JSON.parse(output) as { error?: unknown }
+        if (typeof parsed?.error === 'string' && parsed.error !== '') error = parsed.error
+      } catch {
+        // plain-text output: not a structured error
+      }
+      if (error == null && message.status === 'error') error = output
+
+      results.push({
+        callId: message.tool_call_id,
+        name: typeof message.name === 'string' ? message.name : 'unknown',
+        ok: error == null,
+        ...(error != null && { error }),
+        output: output.slice(0, TOOL_OUTPUT_MAX_CHARS)
+      })
+    }
+
+    return results
+  }
+
+  /**
    * Sums provider-reported usage_metadata across every AI message in the run
    * (an agent turn may call the model more than once before the final reply).
    * Returns undefined when no message carries usage data (provider didn't report it).
@@ -341,11 +475,17 @@ export class ChatService {
     let inputTokens = 0
     let outputTokens = 0
     let totalTokens = 0
+    let cachedInputTokens = 0
     let found = false
 
     for (const message of messages) {
       const usage = message.usage_metadata as
-        | { input_tokens?: number; output_tokens?: number; total_tokens?: number }
+        | {
+            input_tokens?: number
+            output_tokens?: number
+            total_tokens?: number
+            input_token_details?: { cache_read?: number }
+          }
         | undefined
       if (usage == null) continue
       found = true
@@ -353,8 +493,11 @@ export class ChatService {
       outputTokens += usage.output_tokens ?? 0
       totalTokens +=
         usage.total_tokens ?? (usage.input_tokens ?? 0) + (usage.output_tokens ?? 0)
+      cachedInputTokens += usage.input_token_details?.cache_read ?? 0
     }
 
-    return found ? { inputTokens, outputTokens, totalTokens } : undefined
+    return found
+      ? { inputTokens, outputTokens, totalTokens, cachedInputTokens }
+      : undefined
   }
 }

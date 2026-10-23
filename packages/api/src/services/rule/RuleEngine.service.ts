@@ -139,17 +139,6 @@ export class RuleEngine {
 
     const actionResults: Array<Record<string, unknown>> = []
     for (const action of rule.actions) {
-      const skip = await RuleEngine.shouldSkipAction(action.deviceId, action.state)
-      if (skip) {
-        actionResults.push({
-          deviceId: action.deviceId,
-          state: action.state,
-          skipped: true,
-          reason: 'target already in desired state'
-        })
-        continue
-      }
-
       const deviceLogData = action.state === 'on' ? '1' : '0'
       const deviceLog = await DeviceLogService.create({
         deviceLogDeviceId: action.deviceId,
@@ -160,7 +149,6 @@ export class RuleEngine {
       actionResults.push({
         deviceId: action.deviceId,
         state: action.state,
-        skipped: false,
         published: true,
         deviceLogId: deviceLog.deviceLogId,
         deviceLogData: deviceLog.deviceLogData
@@ -197,40 +185,6 @@ export class RuleEngine {
     logger.info(
       `[RuleEngine] ruleId=${rule.ruleId} fired actions=${actionResults.length}`
     )
-  }
-
-  private static async shouldSkipAction(
-    deviceId: number,
-    desired: 'on' | 'off'
-  ): Promise<boolean> {
-    try {
-      const last = await DeviceLogModel.findOne({
-        where: { deleted: 0, deviceLogDeviceId: deviceId },
-        order: [['createdAt', 'DESC']],
-        attributes: ['deviceLogData']
-      })
-      if (last != null) {
-        const data = String(last.deviceLogData ?? '')
-        const current: 'on' | 'off' | null =
-          data === '1' || data.toLowerCase() === 'on'
-            ? 'on'
-            : data === '0' || data.toLowerCase() === 'off'
-              ? 'off'
-              : null
-        if (current != null) return current === desired
-      }
-
-      const mqttState = MQTTService.getLastDeviceState(deviceId)
-      if (mqttState?.payload != null && typeof mqttState.payload === 'object') {
-        const state = (mqttState.payload as { state?: unknown }).state
-        if (typeof state === 'string') {
-          return state.toLowerCase() === desired
-        }
-      }
-      return false
-    } catch {
-      return false
-    }
   }
 
   private static async readLastDeviceMetric(

@@ -4,6 +4,7 @@ export const CHAT_WS_PATH = "/chat/ws";
 
 export interface ChatSocketPayload {
   type?: string;
+  requestId?: string;
   reply?: string;
   message?: string;
   content?: string;
@@ -43,5 +44,20 @@ export function parseChatSocketPayload(raw: string): string | null {
     return reply ? String(reply) : null;
   } catch {
     return raw;
+  }
+}
+
+/**
+ * Request id echoed by the backend on `chat.reply` / `chat.error` frames, so the browser can
+ * match a reply to the command it sent. Null for frames without one (e.g. the connection ack).
+ */
+export function parseChatSocketRequestId(raw: string): string | null {
+  try {
+    const parsed = JSON.parse(raw) as ChatSocketPayload;
+    return typeof parsed?.requestId === "string" && parsed.requestId
+      ? parsed.requestId
+      : null;
+  } catch {
+    return null;
   }
 }

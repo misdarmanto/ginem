@@ -37,3 +37,8 @@ export type IFindAllIndexing = z.infer<typeof findAllIndexingsSchema>
 export type IDeleteIndexing = z.infer<typeof deleteIndexingParamsSchema>
 /** Single indexing chunk (API array element). */
 export type ICreateIndexing = z.infer<typeof createIndexingItemSchema>
+/** Any document written to the vector DB, including system-generated ones such as devices. */
+export interface IIndexingDocument {
+  text: string
+  source?: string
+}

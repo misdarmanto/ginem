@@ -21,8 +21,8 @@ import type {
 } from '../../schemas/RuleSchema'
 import { RuleCache, type CachedRule } from './RuleCache.service'
 
-const TRIGGER_DEVICE_TYPES = new Set(['sensor', 'hybrid'])
-const ACTION_DEVICE_TYPES = new Set(['actuator', 'hybrid'])
+const TRIGGER_DEVICE_TYPE = 'sensor'
+const ACTION_DEVICE_TYPE = 'actuator'
 
 function serializeRule(rule: RuleInstance): CachedRule {
   const plain = rule.get({ plain: true }) as IRuleAttributes & {
@@ -135,9 +135,9 @@ export class RuleManagementService {
     deviceName: string
     deviceType: string
   }): void {
-    if (!TRIGGER_DEVICE_TYPES.has(device.deviceType)) {
+    if (device.deviceType !== TRIGGER_DEVICE_TYPE) {
       throw new AppError(
-        `Device "${device.deviceName}" cannot be a rule trigger (type=${device.deviceType}). Use sensor or hybrid.`,
+        `Device "${device.deviceName}" cannot be a rule trigger (type=${device.deviceType}). Use a sensor.`,
         StatusCodes.BAD_REQUEST
       )
     }
@@ -147,9 +147,9 @@ export class RuleManagementService {
     deviceName: string
     deviceType: string
   }): void {
-    if (!ACTION_DEVICE_TYPES.has(device.deviceType)) {
+    if (device.deviceType !== ACTION_DEVICE_TYPE) {
       throw new AppError(
-        `Device "${device.deviceName}" cannot be a rule action target (type=${device.deviceType}). Use actuator or hybrid.`,
+        `Device "${device.deviceName}" cannot be a rule action target (type=${device.deviceType}). Use an actuator.`,
         StatusCodes.BAD_REQUEST
       )
     }

@@ -39,6 +39,7 @@ export const queryChat = async (
   res: Response
 ): Promise<Response> => {
   try {
+    const receivedAt = Date.now()
     const payload = req.body as IChatSchema
     const wantsBinaryAudio = payload.withAudio && payload.audioFormat === 'binary'
     const userId = req.jwtPayload?.userId
@@ -46,6 +47,9 @@ export const queryChat = async (
 
     const result = await ChatMessageBroker.requestChat(payload.message, {
       source: 'web',
+      receivedAt,
+      ...(payload.requestId != null ? { requestId: payload.requestId } : {}),
+      ...(payload.channel != null ? { channel: payload.channel } : {}),
       withAudio: payload.withAudio === true && !wantsBinaryAudio,
       ...(userId != null ? { userId } : {}),
       ...(sessionId != null ? { sessionId } : {})

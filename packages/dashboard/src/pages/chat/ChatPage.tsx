@@ -12,7 +12,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import SendIcon from "@mui/icons-material/Send";
-import GraphicEqIcon from "@mui/icons-material/GraphicEq";
+import PixelAvatar from "@/features/chat/components/PixelAvatar";
 import SmartToyOutlinedIcon from "@mui/icons-material/SmartToyOutlined";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
@@ -581,7 +581,7 @@ export default function ChatView() {
             aria-label={t("chatPage.voice.start")}
             sx={{ width: 40, height: 40, flexShrink: 0 }}
           >
-            <GraphicEqIcon fontSize="small" />
+            <PixelAvatar size={28} expression="happy" still />
           </IconButton>
           <IconButton
             color="primary"

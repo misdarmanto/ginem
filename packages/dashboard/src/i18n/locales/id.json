@@ -43,11 +43,11 @@
     "devices": "Perangkat",
     "rules": "Aturan",
     "scheduler": "Penjadwal",
-    "embedding": "Embedding",
     "logger": "Log",
     "admin": "Admin",
     "settings": "Pengaturan",
-    "profile": "Profil"
+    "profile": "Profil",
+    "agent": "Agent"
   },
   "header": {
     "searchPlaceholder": "Cari halaman…",
@@ -60,7 +60,9 @@
     "openMenu": "Buka menu",
     "closeMenu": "Tutup menu",
     "logout": "Keluar",
-    "there": "kamu"
+    "there": "kamu",
+    "mainNavigation": "Navigasi utama",
+    "notificationsUnread": "Notifikasi ({{count}} baru)"
   },
   "auth": {
     "welcomeBack": "Selamat datang kembali",
@@ -187,9 +189,12 @@
   },
   "notificationsPanel": {
     "title": "Notifikasi",
-    "subtitle": "Pembaruan dan aktivitas terbaru",
+    "subtitle": "Peristiwa sistem dari logger",
     "close": "Tutup notifikasi",
-    "empty": "Belum ada notifikasi."
+    "empty": "Belum ada peristiwa sistem.",
+    "error": "Notifikasi gagal dimuat.",
+    "unread": "Baru",
+    "viewAll": "Lihat semua di Logger"
   },
   "devices": {
     "title": "Perangkat",
@@ -208,5 +213,105 @@
     "chartWillAppear": "Grafik akan muncul saat log tersedia",
     "update": "Perbarui",
     "unknownDevice": "Tidak diketahui"
+  },
+  "agent": {
+    "title": "Agent",
+    "subtitle": "Log perintah AI agent dan basis pengetahuan (embedding) yang dipakainya.",
+    "status": {
+      "success": "Berhasil",
+      "failed": "Gagal",
+      "clarification": "Klarifikasi",
+      "pending": "Menilai…"
+    },
+    "channel": {
+      "chat": "Chat",
+      "voice": "Suara",
+      "whatsapp": "WhatsApp"
+    },
+    "columns": {
+      "time": "Waktu",
+      "command": "Perintah",
+      "via": "Via",
+      "status": "Status",
+      "latency": "Latensi E2E",
+      "inputTokens": "Input",
+      "outputTokens": "Output",
+      "totalTokens": "Total",
+      "cost": "Estimasi biaya",
+      "model": "Model"
+    },
+    "filters": {
+      "status": "Filter status",
+      "allStatuses": "Semua status",
+      "search": "Cari perintah…",
+      "searchButton": "Cari"
+    },
+    "summary": {
+      "commands": "Perintah",
+      "outcomes": "{{success}} berhasil · {{failed}} gagal · {{clarification}} klarifikasi",
+      "avgLatency": "Rata-rata latensi E2E",
+      "latencyBrowser": "Diukur di browser",
+      "latencyServer": "Dari server (belum ada data browser)",
+      "tokens": "Total token",
+      "tokenSplit": "{{input}} masuk · {{output}} keluar",
+      "cost": "Estimasi biaya",
+      "costNote": "Hanya LLM agent, harga resmi"
+    },
+    "latencyBrowserHint": "Dari browser mengirim perintah sampai balasan diterima",
+    "latencyServerHint": "Diukur di server (browser tidak melaporkan)",
+    "empty": "Belum ada perintah. Kirim satu dari chat.",
+    "detail": {
+      "title": "Detail perintah",
+      "close": "Tutup",
+      "command": "Perintah",
+      "status": "Hasil",
+      "reply": "Balasan",
+      "timing": "Latensi",
+      "e2eBrowser": "End to end (browser)",
+      "e2eServer": "End to end (server)",
+      "server": "Total di server",
+      "queue": "Antre",
+      "context": "Memori + pencarian pengetahuan",
+      "llm": "LLM dan tool",
+      "usage": "Pemakaian",
+      "model": "Model",
+      "inputTokens": "Token input",
+      "cachedTokens": "…termasuk cache",
+      "outputTokens": "Token output",
+      "totalTokens": "Total token",
+      "cost": "Estimasi biaya",
+      "tools": "Tool yang dipakai",
+      "toolOk": "OK",
+      "toolFailed": "Gagal",
+      "noTools": "Tidak ada tool yang dipanggil."
+    },
+    "export": {
+      "button": "Ekspor CSV",
+      "title": "Ekspor log agent ke CSV",
+      "presets": "Rentang tanggal",
+      "preset": {
+        "today": "Hari ini",
+        "yesterday": "Kemarin",
+        "thisWeek": "Minggu ini",
+        "thisMonth": "Bulan ini",
+        "all": "Semua",
+        "custom": "Kustom"
+      },
+      "from": "Dari",
+      "to": "Sampai",
+      "summaryAll": "Semua log",
+      "summaryRange": "Log dari {{from}} sampai {{to}} (kedua tanggal ikut)",
+      "filterNote": "Filter status dan pencarian yang sedang dipakai di tabel ikut diterapkan.",
+      "errorIncomplete": "Pilih tanggal mulai dan tanggal akhir.",
+      "errorOrder": "Tanggal mulai tidak boleh setelah tanggal akhir.",
+      "failed": "Ekspor gagal. Silakan coba lagi.",
+      "cancel": "Batal",
+      "download": "Unduh CSV"
+    },
+    "tabs": {
+      "label": "Bagian Agent",
+      "log": "Log",
+      "embedding": "Embedding"
+    }
   }
 }

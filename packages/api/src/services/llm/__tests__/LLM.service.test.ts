@@ -51,6 +51,44 @@ describe('LLMService', () => {
     })
   })
 
+  it.each([['gpt-4o'], ['gpt-4o-mini'], ['gpt-5.6-luna'], ['gpt-4-turbo']])(
+    'turns reasoning off for %s so tool calling keeps working',
+    (model) => {
+      LLMService.create({ provider: 'openai', model })
+
+      expect(ChatOpenAIMock).toHaveBeenCalledWith(
+        expect.objectContaining({ reasoning: { effort: 'none' } })
+      )
+    }
+  )
+
+  it.each([['o1'], ['o3'], ['o4-mini']])(
+    'uses the lowest effort the o-series accepts for %s, which rejects "none"',
+    (model) => {
+      LLMService.create({ provider: 'openai', model })
+
+      expect(ChatOpenAIMock).toHaveBeenCalledWith(
+        expect.objectContaining({ model, reasoning: { effort: 'low' } })
+      )
+    }
+  )
+
+  it('leaves temperature out for o-series models, which reject it', () => {
+    LLMService.create({ provider: 'openai', model: 'o1', temperature: 0 })
+
+    expect(ChatOpenAIMock).toHaveBeenCalledWith(
+      expect.objectContaining({ model: 'o1', temperature: undefined })
+    )
+  })
+
+  it('keeps the requested temperature for other OpenAI models', () => {
+    LLMService.create({ provider: 'openai', model: 'gpt-4o-mini', temperature: 0 })
+
+    expect(ChatOpenAIMock).toHaveBeenCalledWith(
+      expect.objectContaining({ model: 'gpt-4o-mini', temperature: 0 })
+    )
+  })
+
   it('creates ChatOpenAI with overrides', () => {
     LLMService.create({
       provider: 'openai',

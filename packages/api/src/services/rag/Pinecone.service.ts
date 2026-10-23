@@ -5,7 +5,7 @@ import { StatusCodes } from 'http-status-codes'
 import { Pinecone, type IndexModel } from '@pinecone-database/pinecone'
 import { appConfigs } from '../../configs/appConfig'
 import { AppError } from '../../utilities/AppError'
-import { type ICreateIndexing } from '../../schemas/IndexingSchema'
+import { type IIndexingDocument } from '../../schemas/IndexingSchema'
 
 export interface RagDocument {
   content: string
@@ -180,7 +180,7 @@ class PineconeService {
     }
   }
 
-  async addDocuments(documents: ICreateIndexing[]): Promise<void> {
+  async addDocuments(documents: IIndexingDocument[]): Promise<void> {
     try {
       if (documents.length === 0) return
 

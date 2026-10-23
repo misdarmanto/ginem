@@ -6,9 +6,15 @@ import { appConfigs } from '../../configs/appConfig'
 import { AppError } from '../../utilities/AppError'
 import logger from '../../utilities/logger'
 import { ChatService, type ChatQueryOptions, type ChatQueryResponse } from '../chat'
+import { AgentLogService } from '../agent'
 import { closeRabbitConnection, getChatQueueName, getRabbitChannel } from './connection'
 import { LOG_PREFIX } from './constants'
-import type { ChatMessageSource, ChatQueueReply, ChatQueueRequest } from './types'
+import type {
+  ChatChannel,
+  ChatMessageSource,
+  ChatQueueReply,
+  ChatQueueRequest
+} from './types'
 
 let consumerTag: string | undefined
 let started = false
@@ -22,14 +28,39 @@ function parseReply(raw: Buffer): ChatQueueReply {
 }
 
 async function processChatRequest(request: ChatQueueRequest): Promise<ChatQueueReply> {
+  const consumedAt = Date.now()
+  const logBase = {
+    requestId: request.requestId ?? request.messageId,
+    ...(request.userId != null ? { userId: request.userId } : {}),
+    ...(request.sessionId != null && request.sessionId !== ''
+      ? { sessionId: request.sessionId }
+      : {}),
+    source: request.source,
+    channel: request.channel ?? 'chat',
+    command: request.message
+  } as const
+  const timing = (finishedAt: number) => ({
+    receivedAt: request.receivedAt,
+    enqueuedAt: request.enqueuedAt,
+    consumedAt,
+    finishedAt
+  })
+
   try {
     const result = await ChatService.query(request.message, {
       withAudio: request.withAudio === true,
       source: request.source,
+      captureTrace: true,
       ...(request.userId != null ? { userId: request.userId } : {}),
       ...(request.sessionId != null && request.sessionId !== ''
         ? { sessionId: request.sessionId }
         : {})
+    })
+
+    void AgentLogService.recordExecution({
+      ...logBase,
+      result: { ok: true, reply: result.reply, trace: result.trace },
+      timing: timing(Date.now())
     })
 
     return {
@@ -46,6 +77,13 @@ async function processChatRequest(request: ChatQueueRequest): Promise<ChatQueueR
     logger.error(
       `${LOG_PREFIX} process failed messageId=${request.messageId}: ${message}`
     )
+
+    void AgentLogService.recordExecution({
+      ...logBase,
+      result: { ok: false, error: message },
+      timing: timing(Date.now())
+    })
+
     return {
       messageId: request.messageId,
       ok: false,
@@ -88,6 +126,11 @@ async function onQueuedMessage(
 
 export interface ChatBrokerRequestOptions extends ChatQueryOptions {
   source?: ChatMessageSource
+  /** Id chosen by the client for this command; defaults to a server-generated one. */
+  requestId?: string
+  channel?: ChatChannel
+  /** ms epoch when the transport layer received the command; defaults to enqueue time. */
+  receivedAt?: number
 }
 
 /**
@@ -158,8 +201,13 @@ export class ChatMessageBroker {
       autoDelete: true
     })
 
+    const enqueuedAt = Date.now()
     const request: ChatQueueRequest = {
       messageId,
+      ...(options?.requestId != null ? { requestId: options.requestId } : {}),
+      ...(options?.channel != null ? { channel: options.channel } : {}),
+      receivedAt: options?.receivedAt ?? enqueuedAt,
+      enqueuedAt,
       source,
       message,
       withAudio: options?.withAudio === true,

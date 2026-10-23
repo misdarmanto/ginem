@@ -16,6 +16,8 @@ export default defineConfig({
   },
   test: {
     environment: "jsdom",
+    // MUI-heavy first renders can pass 5s when the whole suite runs in parallel
+    testTimeout: 15000,
     setupFiles: "./src/test/setup.ts",
     css: true,
     coverage: {

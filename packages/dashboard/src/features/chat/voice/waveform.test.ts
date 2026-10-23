@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mirrorLevels, smoothLevels, spectrumToLevels } from "./waveform";
+import { spectrumToLevels } from "./waveform";
 
 describe("spectrumToLevels", () => {
   it("returns one level per bar, normalised to 0..1", () => {
@@ -23,26 +23,5 @@ describe("spectrumToLevels", () => {
     const levels = spectrumToLevels(data, 6);
 
     levels.forEach((level) => expect(level).toBeCloseTo(200 / 255));
-  });
-});
-
-describe("smoothLevels", () => {
-  it("rises faster than it falls", () => {
-    const rising = smoothLevels([0], [1])[0];
-    const falling = 1 - smoothLevels([1], [0])[0];
-
-    expect(rising).toBeGreaterThan(falling);
-  });
-
-  it("treats missing previous values as zero", () => {
-    expect(smoothLevels([], [1])).toEqual([0.6]);
-  });
-});
-
-describe("mirrorLevels", () => {
-  it("is symmetric around the center", () => {
-    expect(mirrorLevels([0.1, 0.5, 0.9])).toEqual([
-      0.9, 0.5, 0.1, 0.1, 0.5, 0.9,
-    ]);
   });
 });

@@ -2,18 +2,16 @@
 # One command: creates the AWS server on first run, then builds and deploys. Re-run to redeploy.
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-STATE="$ROOT/deploy/aws/.state"
-ENV_FILE="$ROOT/deploy/aws/.env.production"
+# shellcheck source=deploy/aws/lib.sh
+source "$(dirname "$0")/lib.sh"
+
+ROOT="$(cd "$AWS_DIR/../.." && pwd)"
 REMOTE_DIR=/opt/ginem
+WIB_TIMEZONE=Asia/Jakarta
+WIB_OFFSET=+0700
 INSTANCE_TYPE="${INSTANCE_TYPE:-t3.medium}"
 export AWS_REGION="${AWS_REGION:-ap-southeast-1}"
 export AWS_DEFAULT_REGION="$AWS_REGION"
-KEY_NAME=ginem-key
-KEY_FILE="$HOME/.ssh/$KEY_NAME.pem"
-
-log() { printf '\n\033[1m==> %s\033[0m\n' "$*"; }
-need() { command -v "$1" >/dev/null || { echo "Missing: $1"; exit 1; }; }
 for cmd in aws ssh rsync curl npm openssl; do need "$cmd"; done
 aws sts get-caller-identity >/dev/null || { echo "AWS CLI not authenticated. Run: aws configure"; exit 1; }
 
@@ -51,6 +49,7 @@ provision() {
     --user-data '#!/bin/bash
 curl -fsSL https://get.docker.com | sh
 usermod -aG docker ubuntu
+timedatectl set-timezone Asia/Jakarta
 mkdir -p /opt/ginem && chown ubuntu:ubuntu /opt/ginem
 fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile
 echo "/swapfile none swap sw 0 0" >> /etc/fstab' \
@@ -65,23 +64,18 @@ echo "/swapfile none swap sw 0 0" >> /etc/fstab' \
 }
 
 [ -f "$STATE" ] || provision
-# shellcheck disable=SC1090
-source "$STATE"
-export AWS_REGION AWS_DEFAULT_REGION="$AWS_REGION"
+load_state
 HOST="${IP//./-}.sslip.io"
 SSH=(ssh -i "$KEY_FILE" -o StrictHostKeyChecking=accept-new -o ConnectTimeout=10 "ubuntu@$IP")
 
 log "Allowing SSH from your current IP only"
-MY_IP=$(curl -fsS https://checkip.amazonaws.com)
-OLD=$(aws ec2 describe-security-groups --group-ids "$SG_ID" \
-  --query 'SecurityGroups[0].IpPermissions[?FromPort==`22`].IpRanges[].CidrIp' --output text)
-for cidr in $OLD; do
-  aws ec2 revoke-security-group-ingress --group-id "$SG_ID" --protocol tcp --port 22 --cidr "$cidr" >/dev/null
-done
-aws ec2 authorize-security-group-ingress --group-id "$SG_ID" --protocol tcp --port 22 --cidr "$MY_IP/32" >/dev/null
+allow_my_ssh_ip
 
 log "Waiting for the server to finish installing Docker"
 until "${SSH[@]}" 'cloud-init status --wait >/dev/null 2>&1; docker info >/dev/null 2>&1'; do sleep 5; done
+
+log "Setting server time zone to WIB (UTC+7)"
+"${SSH[@]}" "sudo timedatectl set-timezone $WIB_TIMEZONE"
 
 log "Preparing environment file (first run generates passwords)"
 if [ ! -f "$ENV_FILE" ]; then
@@ -96,6 +90,11 @@ if [ ! -f "$ENV_FILE" ]; then
   set_kv "$ENV_FILE" RABBITMQ_PASSWORD "$(openssl rand -hex 16)"
   set_kv "$ENV_FILE" MQTT_CLIENT_ID "${base_client:-ginem}-prod"
 fi
+# Provider keys follow the local .env, so a rotated key reaches the server on the next deploy.
+for key in OPENAI_API_KEY DEEPSEEK_API_KEY ANTHROPIC_API_KEY; do
+  value=$(grep "^$key=" "$ROOT/packages/api/.env" | head -1 | cut -d= -f2- || true)
+  [ -z "$value" ] || set_kv "$ENV_FILE" "$key" "$value"
+done
 set_kv "$ENV_FILE" SITE_HOST "$HOST"
 set_kv "$ENV_FILE" CORS_ORIGIN "https://$HOST"
 
@@ -112,6 +111,15 @@ rsync -az -e "ssh -i $KEY_FILE" "$ENV_FILE" "ubuntu@$IP:$REMOTE_DIR/.env"
 
 log "Starting containers (first build takes a few minutes)"
 "${SSH[@]}" "cd $REMOTE_DIR && docker compose -f docker-compose.yml -f deploy/aws/docker-compose.prod.yml up -d --build"
+
+log "Verifying every layer runs on WIB (UTC+7)"
+host_offset=$("${SSH[@]}" 'date +%z')
+mysql_offset=$("${SSH[@]}" 'docker exec ta-mysql date +%z')
+app_offset=$("${SSH[@]}" "docker exec ta-backend node -e 'const m=-new Date().getTimezoneOffset();console.log((m<0?\"-\":\"+\")+String(Math.abs(m)/60|0).padStart(2,\"0\")+String(Math.abs(m)%60).padStart(2,\"0\"))'")
+printf '  host %s | mysql %s | api %s\n' "$host_offset" "$mysql_offset" "$app_offset"
+for offset in "$host_offset" "$mysql_offset" "$app_offset"; do
+  [ "$offset" = "$WIB_OFFSET" ] || { echo "A layer is not on WIB ($WIB_OFFSET). Check the time zone settings."; exit 1; }
+done
 
 log "Waiting for the app to become healthy"
 for _ in $(seq 1 60); do

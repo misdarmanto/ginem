@@ -29,13 +29,13 @@ jest.mock('../../device', () => ({
 
 jest.mock('../../mqtt/MQTT.service', () => ({
   MQTTService: {
-    publishActuatorState: jest.fn(),
-    getLastDeviceState: jest.fn().mockReturnValue(null)
+    publishActuatorState: jest.fn()
   }
 }))
 
 const { MQTTService } = jest.requireMock('../../mqtt/MQTT.service')
 const { DeviceLogService } = jest.requireMock('../../device')
+const { DeviceLogModel } = jest.requireMock('../../../models/DeviceLogModel')
 const { RuleExecutionLogModel } = jest.requireMock(
   '../../../models/RuleExecutionLogModel'
 )
@@ -162,6 +162,28 @@ describe('RuleEngine.evaluate', () => {
     expect(MQTTService.publishActuatorState).toHaveBeenCalledWith(20, 'on')
     expect(RuleExecutionLogModel.create).toHaveBeenCalledWith(
       expect.objectContaining({ ruleId: 1, success: true })
+    )
+  })
+
+  it('still commands the actuator when its last logged state is already the target', async () => {
+    // The command log is not the device's real state: the fan may have been switched off
+    // physically while the log still says "on".
+    DeviceLogModel.findOne.mockResolvedValue({ deviceLogData: '1' })
+    RuleCache.setRules([sampleRule()])
+
+    await RuleEngine.evaluate({
+      deviceId: 10,
+      metrics: { temperature: 36 },
+      receivedAt: new Date()
+    })
+
+    expect(MQTTService.publishActuatorState).toHaveBeenCalledWith(20, 'on')
+    expect(RuleExecutionLogModel.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actionResult: {
+          actions: [expect.objectContaining({ deviceId: 20, published: true })]
+        }
+      })
     )
   })
 

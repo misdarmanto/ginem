@@ -45,7 +45,7 @@ export const createAutomationRuleTool = tool(
   {
     name: 'create_automation_rule',
     description:
-      'Create an Event-Condition-Action automation rule from natural language intent. Use when the user wants automatic cooperation between devices (e.g. "turn on fan if temperature > 25"). Do NOT use for immediate on/off (use set_actuator_state_by_device_name) or time schedules (use schedule_*). Trigger device must be sensor/hybrid; action devices must be actuator/hybrid. Metric is a string like temperature or humidity.',
+      'Create an Event-Condition-Action automation rule from natural language intent. Use when the user wants automatic cooperation between devices (e.g. "turn on fan if temperature > 25"). Do NOT use for immediate on/off (use set_actuator_state_by_device_name) or time schedules (use schedule_*). Trigger device must be a sensor; action devices must be an actuator. Metric is a string like temperature or humidity.',
     schema: z.object({
       name: z.string().min(1).max(150).optional(),
       originalPrompt: z

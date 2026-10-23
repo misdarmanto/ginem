@@ -8,7 +8,8 @@ import type { SpokenCaption } from "../voice/captionSync";
 import type { VoiceAnalysers } from "../voice/useRealtimeVoice";
 import type { VoiceStatus } from "../voice/realtimeEvents";
 import SpokenCaptionText from "./SpokenCaptionText";
-import VoiceWaveform from "./VoiceWaveform";
+import VoiceAvatar from "./VoiceAvatar";
+import { expressionFor } from "../voice/expression";
 
 interface VoiceOverlayProps {
   status: VoiceStatus;
@@ -37,8 +38,12 @@ export default function VoiceOverlay({
 }: VoiceOverlayProps) {
   const { t } = useTranslation();
   const isError = status === "error";
-  const analyser = status === "speaking" ? analysers.output : analysers.input;
-  const hasAssistantCaption = spokenCaption.spoken !== "" || spokenCaption.pending !== "";
+  const expression = expressionFor(
+    status,
+    spokenCaption.spoken + spokenCaption.pending,
+  );
+  const hasAssistantCaption =
+    spokenCaption.spoken !== "" || spokenCaption.pending !== "";
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -70,9 +75,9 @@ export default function VoiceOverlay({
             : "rgba(248,250,252,0.9)",
       }}
     >
-      <VoiceWaveform
-        analyser={analyser}
-        color={isError ? "#ef4444" : undefined}
+      <VoiceAvatar
+        expression={expression}
+        speechAnalyser={status === "speaking" ? analysers.output : null}
       />
 
       <Typography

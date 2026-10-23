@@ -9,6 +9,7 @@ import AppLayout from "@/components/layout/AppLayout";
 import AuthLayout from "@/components/layout/AuthLayout";
 import ErrorPage from "@/pages/NotFound/ErrorPage";
 import { useToken } from "@/hooks/use-token";
+import IndexingRedirect from "./IndexingRedirect";
 import { ROUTES } from "@/routes/routes";
 
 const DashboardPage = lazy(() => import("@/pages/dashboard/DashboardPage"));
@@ -22,6 +23,8 @@ const ListSchedulerPage = lazy(
   () => import("@/pages/scheduler/ListSchedulerView"),
 );
 const ListLoggerPage = lazy(() => import("@/pages/logger/ListLoggerView"));
+const AgentLayout = lazy(() => import("@/pages/agent/AgentLayout"));
+const AgentLogsPage = lazy(() => import("@/pages/agent/AgentLogsView"));
 const ListEmbeddingPage = lazy(
   () => import("@/pages/embedding/ListEmbeddingView"),
 );
@@ -75,7 +78,15 @@ export default function AppRoutes() {
       element: <Navigate to={ROUTES.scheduler} replace />,
     },
     { path: ROUTES.logger, element: withSuspense(<ListLoggerPage />) },
-    { path: ROUTES.indexing, element: withSuspense(<ListEmbeddingPage />) },
+    {
+      path: ROUTES.agent,
+      element: withSuspense(<AgentLayout />),
+      children: [
+        { index: true, element: withSuspense(<AgentLogsPage />) },
+        { path: "embedding", element: withSuspense(<ListEmbeddingPage />) },
+      ],
+    },
+    { path: ROUTES.indexing, element: <IndexingRedirect /> },
     { path: ROUTES.admins, element: withSuspense(<ListAdminsPage />) },
     { path: ROUTES.profile, element: withSuspense(<ProfilePage />) },
     {

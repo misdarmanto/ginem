@@ -66,6 +66,7 @@ function NoRowsOverlay({
 const initialFormState: DeviceCreateFormState = {
   deviceName: "",
   deviceType: "",
+  deviceDescription: "",
   deviceFirmwareVersion: "",
   deviceMetadataRoom: "",
   deviceMetadataVoltage: "",
@@ -74,6 +75,7 @@ const initialFormState: DeviceCreateFormState = {
 const initialEditFormState: DeviceEditFormState = {
   deviceName: "",
   deviceStatus: "",
+  deviceDescription: "",
   deviceFirmwareVersion: "",
   deviceMetadataRoom: "",
   deviceMetadataVoltage: "",
@@ -163,11 +165,13 @@ export default function ListDeviceView() {
       const body: {
         deviceName: string;
         deviceType: string;
+        deviceDescription?: string;
         deviceFirmwareVersion?: string;
         deviceMetadata?: Record<string, string>;
       } = {
         deviceName: addForm.deviceName.trim(),
         deviceType: addForm.deviceType.trim(),
+        deviceDescription: addForm.deviceDescription.trim() || undefined,
         deviceFirmwareVersion:
           addForm.deviceFirmwareVersion.trim() || undefined,
       };
@@ -215,6 +219,7 @@ export default function ListDeviceView() {
     setEditForm({
       deviceName: row?.deviceName ?? "",
       deviceStatus: row?.deviceStatus ?? "online",
+      deviceDescription: row?.deviceDescription ?? "",
       deviceFirmwareVersion: row?.deviceFirmwareVersion ?? "",
       deviceMetadataRoom: typeof meta.room === "string" ? meta.room : "",
       deviceMetadataVoltage:
@@ -254,6 +259,7 @@ export default function ListDeviceView() {
         deviceId: deviceToEdit.deviceId,
         deviceName: editForm.deviceName.trim(),
         deviceStatus: editForm.deviceStatus || "online",
+        deviceDescription: editForm.deviceDescription.trim() || undefined,
         deviceFirmwareVersion:
           editForm.deviceFirmwareVersion.trim() || undefined,
         deviceMetadata,

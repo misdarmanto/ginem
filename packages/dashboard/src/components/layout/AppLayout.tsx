@@ -18,6 +18,8 @@ import {
   Menu,
   MenuItem,
   Tooltip,
+  Badge,
+  ButtonBase,
   Backdrop,
   CircularProgress,
   Snackbar,
@@ -40,6 +42,8 @@ import {
   NotificationsNoneOutlined,
   ChatBubbleOutlineOutlined,
   Close as CloseIcon,
+  ChevronLeft as ChevronLeftIcon,
+  ChevronRight as ChevronRightIcon,
   Menu as MenuIcon,
   Translate as TranslateIcon,
 } from "@mui/icons-material";
@@ -52,12 +56,18 @@ import { IconMenus } from "@/assets/icons";
 import { ColorModeContext } from "@/context/colorMode.context";
 import { ChatWidget } from "@/features/chat/components/ChatWidget";
 import { NotificationPanel } from "@/features/notifications/components/NotificationPanel";
+import { useSystemNotifications } from "@/features/notifications/useSystemNotifications";
 import { ROUTES } from "@/routes/routes";
 import { brand } from "@/styles/theme";
 import { useMyProfileQuery } from "@/hooks/services";
 import { changeLanguage } from "@/i18n/config";
+import { useSidebarOpen } from "./useSidebarOpen";
 
-const drawerWidth = 260;
+const drawerWidth = 208;
+/** Collapsed sidebar: a rail of icons, like the server list in Discord. */
+const railWidth = 76;
+const RAIL_ICON_SIZE = 48;
+const SIDEBAR_TRANSITION = "width 0.25s ease";
 
 type NavItem = {
   title: string;
@@ -89,9 +99,9 @@ function useMainNav(): NavItem[] {
       icon: <IconMenus.schedule fontSize="small" />,
     },
     {
-      title: t("nav.embedding"),
-      link: ROUTES.indexing,
-      icon: <IconMenus.vectorIndexes fontSize="small" />,
+      title: t("nav.agent"),
+      link: ROUTES.agent,
+      icon: <IconMenus.agent fontSize="small" />,
     },
     {
       title: t("nav.logger"),
@@ -127,17 +137,114 @@ function isRouteActive(pathname: string, link: string) {
   return pathname === link || pathname.startsWith(`${link}/`);
 }
 
+function RailItem({
+  item,
+  active,
+  onNavigate,
+}: {
+  item: NavItem;
+  active: boolean;
+  onNavigate?: () => void;
+}) {
+  return (
+    <Tooltip title={item.title} placement="right" arrow>
+      <Box
+        sx={{
+          position: "relative",
+          width: "100%",
+          display: "flex",
+          justifyContent: "center",
+          "&:hover .rail-pill": { height: active ? 40 : 20 },
+        }}
+      >
+        <Box
+          className="rail-pill"
+          sx={{
+            position: "absolute",
+            left: 0,
+            top: "50%",
+            transform: "translateY(-50%)",
+            width: 4,
+            height: active ? 40 : 0,
+            borderRadius: "0 4px 4px 0",
+            bgcolor: "text.primary",
+            transition: "height 0.15s ease",
+          }}
+        />
+        <ButtonBase
+          component={Link}
+          to={item.link}
+          onClick={onNavigate}
+          aria-label={item.title}
+          aria-current={active ? "page" : undefined}
+          sx={(theme) => ({
+            width: RAIL_ICON_SIZE,
+            height: RAIL_ICON_SIZE,
+            // a circle that squares off on hover and when active, as in Discord
+            borderRadius: active ? "16px" : "50%",
+            color: active
+              ? theme.palette.primary.contrastText
+              : theme.palette.text.secondary,
+            bgcolor: active
+              ? theme.palette.primary.main
+              : alpha(theme.palette.text.primary, 0.07),
+            transition:
+              "border-radius 0.2s ease, background-color 0.2s ease, color 0.2s ease",
+            "&:hover": {
+              borderRadius: "16px",
+              bgcolor: theme.palette.primary.main,
+              color: theme.palette.primary.contrastText,
+            },
+            "&.Mui-focusVisible": {
+              outline: `2px solid ${theme.palette.primary.main}`,
+              outlineOffset: 2,
+            },
+          })}
+        >
+          {item.icon}
+        </ButtonBase>
+      </Box>
+    </Tooltip>
+  );
+}
+
 function NavSection({
   label,
   items,
   pathname,
   onNavigate,
+  collapsed,
+  first,
 }: {
   label: string;
   items: NavItem[];
   pathname: string;
   onNavigate?: () => void;
+  collapsed?: boolean;
+  first?: boolean;
 }) {
+  if (collapsed) {
+    return (
+      <Box sx={{ mb: 1.5 }}>
+        {first ? null : <Divider sx={{ mx: 2.5, mb: 1.5 }} />}
+        <List
+          disablePadding
+          aria-label={label}
+          sx={{ display: "flex", flexDirection: "column", gap: 1.25 }}
+        >
+          {items.map((item) => (
+            <RailItem
+              key={item.link}
+              item={item}
+              active={isRouteActive(pathname, item.link)}
+              onNavigate={onNavigate}
+            />
+          ))}
+        </List>
+      </Box>
+    );
+  }
+
   return (
     <Box sx={{ mb: 2.5 }}>
       <Typography
@@ -194,6 +301,7 @@ function NavSection({
                   fontWeight: active ? 700 : 500,
                   fontSize: 14,
                   color: "inherit",
+                  noWrap: true,
                 }}
               />
             </ListItemButton>
@@ -209,11 +317,21 @@ function SidebarContent({
   onNavigate,
   showClose,
   onClose,
+  collapsed,
+  onCollapse,
+  onExpand,
 }: {
   pathname: string;
   onNavigate?: () => void;
+  /** Mobile drawer: a close button. */
   showClose?: boolean;
   onClose?: () => void;
+  /** Desktop: whether the sidebar is the narrow icon rail. */
+  collapsed?: boolean;
+  /** Desktop, open: an arrow that collapses the sidebar to the rail. */
+  onCollapse?: () => void;
+  /** Desktop, collapsed: an arrow that opens the sidebar again. */
+  onExpand?: () => void;
 }) {
   const { t } = useTranslation();
   const mainNav = useMainNav();
@@ -228,6 +346,43 @@ function SidebarContent({
         bgcolor: "background.paper",
       }}
     >
+      {collapsed ? (
+        <Stack alignItems="center" spacing={1} sx={{ py: 2 }}>
+          <Tooltip title={t("common.appName")} placement="right" arrow>
+          <Box
+            sx={{
+              width: collapsed ? RAIL_ICON_SIZE : 36,
+              height: collapsed ? RAIL_ICON_SIZE : 36,
+              borderRadius: collapsed ? "16px" : 2,
+              background: `linear-gradient(135deg, ${brand.indigo}, ${brand.violet})`,
+              display: "grid",
+              placeItems: "center",
+              color: "#fff",
+              fontWeight: 800,
+              fontSize: collapsed ? 18 : 14,
+              boxShadow: `0 8px 20px ${alpha(brand.indigo, 0.35)}`,
+              flexShrink: 0,
+            }}
+          >
+            G
+          </Box>
+          </Tooltip>
+          {onExpand ? (
+            <Tooltip title={t("header.openMenu")} placement="right" arrow>
+              <IconButton
+                aria-label={t("header.openMenu")}
+                aria-expanded={false}
+                aria-controls="desktop-sidebar"
+                onClick={onExpand}
+                size="small"
+                sx={{ bgcolor: (theme) => alpha(theme.palette.text.primary, 0.07) }}
+              >
+                <ChevronRightIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          ) : null}
+        </Stack>
+      ) : (
       <Stack
         direction="row"
         alignItems="center"
@@ -237,21 +392,22 @@ function SidebarContent({
         <Stack direction="row" alignItems="center" spacing={1.25}>
           <Box
             sx={{
-              width: 36,
-              height: 36,
-              borderRadius: 2,
+              width: collapsed ? RAIL_ICON_SIZE : 36,
+              height: collapsed ? RAIL_ICON_SIZE : 36,
+              borderRadius: collapsed ? "16px" : 2,
               background: `linear-gradient(135deg, ${brand.indigo}, ${brand.violet})`,
               display: "grid",
               placeItems: "center",
               color: "#fff",
               fontWeight: 800,
-              fontSize: 14,
+              fontSize: collapsed ? 18 : 14,
               boxShadow: `0 8px 20px ${alpha(brand.indigo, 0.35)}`,
+              flexShrink: 0,
             }}
           >
             G
           </Box>
-          <Box>
+          <Box sx={{ whiteSpace: "nowrap" }}>
             <Typography fontWeight={800} lineHeight={1.1} color="text.primary">
               {t("common.appName")}
             </Typography>
@@ -268,8 +424,19 @@ function SidebarContent({
           >
             <CloseIcon fontSize="small" />
           </IconButton>
+        ) : onCollapse ? (
+          <IconButton
+            aria-label={t("header.closeMenu")}
+            aria-expanded
+            aria-controls="desktop-sidebar"
+            onClick={onCollapse}
+            size="small"
+          >
+            <ChevronLeftIcon fontSize="small" />
+          </IconButton>
         ) : null}
       </Stack>
+      )}
 
       <Box sx={{ flex: 1, overflowY: "auto", pb: 2 }}>
         <NavSection
@@ -277,12 +444,15 @@ function SidebarContent({
           items={mainNav}
           pathname={pathname}
           onNavigate={onNavigate}
+          collapsed={collapsed}
+          first
         />
         <NavSection
           label={t("nav.manage")}
           items={manageNav}
           pathname={pathname}
           onNavigate={onNavigate}
+          collapsed={collapsed}
         />
       </Box>
     </Box>
@@ -305,11 +475,13 @@ export default function AppLayout() {
   const { data: profile } = useMyProfileQuery();
 
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  const { open: sidebarOpen, toggle: toggleSidebar } = useSidebarOpen();
   const [anchorElUser, setAnchorElUser] = useState<null | HTMLElement>(null);
   const [anchorElLanguage, setAnchorElLanguage] =
     useState<null | HTMLElement>(null);
   const [search, setSearch] = useState("");
   const [notificationOpen, setNotificationOpen] = useState(false);
+  const notifications = useSystemNotifications();
 
   const displayName = useMemo(() => {
     const name = profile?.userName?.trim();
@@ -363,22 +535,31 @@ export default function AppLayout() {
             : `radial-gradient(900px 320px at 70% -10%, ${alpha(brand.indigo, 0.2)}, transparent 55%)`,
       }}
     >
-      {/* Desktop sidebar */}
+      {/* Desktop sidebar: full menu, or a rail of icons when collapsed */}
       {!isMobile ? (
         <Box
           component="nav"
+          id="desktop-sidebar"
+          aria-label={t("header.mainNavigation")}
           sx={{
-            width: drawerWidth,
+            width: sidebarOpen ? drawerWidth : railWidth,
             flexShrink: 0,
+            overflow: "hidden",
             borderRight: 1,
             borderColor: "divider",
             bgcolor: "background.paper",
             position: "sticky",
             top: 0,
             height: "100vh",
+            transition: SIDEBAR_TRANSITION,
           }}
         >
-          <SidebarContent pathname={pathname} />
+          <SidebarContent
+            pathname={pathname}
+            collapsed={!sidebarOpen}
+            onCollapse={toggleSidebar}
+            onExpand={toggleSidebar}
+          />
         </Box>
       ) : (
         <MuiDrawer
@@ -441,6 +622,7 @@ export default function AppLayout() {
                 <IconButton
                   edge="start"
                   aria-label={t("header.openMenu")}
+                  aria-expanded={mobileDrawerOpen}
                   onClick={() => setMobileDrawerOpen(true)}
                 >
                   <MenuIcon />
@@ -580,14 +762,27 @@ export default function AppLayout() {
               </Tooltip>
               <Tooltip title={t("header.notifications")}>
                 <IconButton
-                  aria-label={t("header.notifications")}
+                  aria-label={
+                    notifications.unreadCount > 0
+                      ? t("header.notificationsUnread", {
+                          count: notifications.unreadCount,
+                        })
+                      : t("header.notifications")
+                  }
                   onClick={() => setNotificationOpen(true)}
                   sx={{
                     bgcolor: alpha(brand.indigo, 0.06),
                     "&:hover": { bgcolor: alpha(brand.indigo, 0.12) },
                   }}
                 >
-                  <NotificationsNoneOutlined fontSize="small" />
+                  <Badge
+                    color="error"
+                    badgeContent={notifications.unreadCount}
+                    max={9}
+                    overlap="circular"
+                  >
+                    <NotificationsNoneOutlined fontSize="small" />
+                  </Badge>
                 </IconButton>
               </Tooltip>
               <Tooltip title={t("language.label")}>
@@ -767,6 +962,11 @@ export default function AppLayout() {
       <NotificationPanel
         open={notificationOpen}
         onClose={() => setNotificationOpen(false)}
+        items={notifications.items}
+        isLoading={notifications.isLoading}
+        isError={notifications.isError}
+        lastSeenId={notifications.lastSeenId}
+        onSeen={notifications.markAllRead}
       />
     </Box>
   );
