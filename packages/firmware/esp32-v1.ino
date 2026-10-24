@@ -232,10 +232,11 @@ void connectMQTT() {
       Serial.println("SUCCESS");
 
       // ===========================================
-      // SUBSCRIBE SEMUA COMMAND TOPIC
+      // SUBSCRIBE SEMUA COMMAND TOPIC (QoS 1: server mengirim ulang
+      // perintah yang belum di-ACK, misalnya saat koneksi putus sesaat)
       // ===========================================
       for (int i = 0; i < RELAY_COUNT; i++) {
-        mqttClient.subscribe(RELAYS[i].commandTopic);
+        mqttClient.subscribe(RELAYS[i].commandTopic, 1);
 
         Serial.print(RELAYS[i].name);
         Serial.print(": ");
