@@ -11,6 +11,10 @@ import {
 } from '../../DeviceSchedule.service'
 import { MQTTService } from '../../../mqtt/MQTT.service'
 import {
+  ActuatorCommandService,
+  type ActuatorConfirmation
+} from '../../../mqtt/ActuatorCommand.service'
+import {
   buildDailyCronPattern,
   formatRepeatScheduleWib,
   formatScheduleWib,
@@ -84,6 +88,17 @@ function buildRepeatScheduleResponse(hour: number, minute: number) {
   }
 }
 
+const CONFIRMATION_MESSAGES: Record<
+  ActuatorConfirmation,
+  (state: 'on' | 'off') => string
+> = {
+  confirmed: (state) => `Device turned ${state} and the device confirmed it.`,
+  mismatch: (state) =>
+    `Command to turn ${state} was sent, but the device reports a different state. It may not have executed it.`,
+  unconfirmed: (state) =>
+    `Command to turn ${state} was sent to the broker, but the device did not confirm. It may be offline.`
+}
+
 export const setActuatorStateByDeviceNameTool = tool(
   async ({ deviceName, state }) => {
     const device = await DeviceService.findByName(deviceName)
@@ -109,13 +124,16 @@ export const setActuatorStateByDeviceNameTool = tool(
       deviceLogData
     })
 
-    MQTTService.publishActuatorState(device.deviceId, state)
+    const confirmation = await ActuatorCommandService.sendAndConfirm(
+      device.deviceId,
+      state
+    )
 
     return JSON.stringify(
       {
-        success: true,
-        message:
-          state === 'on' ? 'Device turned on (value 1)' : 'Device turned off (value 0)',
+        success: confirmation === 'confirmed',
+        confirmation,
+        message: CONFIRMATION_MESSAGES[confirmation](state),
         deviceName,
         deviceId: device.deviceId,
         deviceType: device.deviceType,
