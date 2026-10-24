@@ -21,6 +21,10 @@ import {
 import BreadCrumberStyle from "@/components/common/Breadcrumb";
 import { IconMenus } from "@/assets/icons";
 import { convertTime } from "@/utils/convertTime";
+import {
+  formatReportedState,
+  resolvePresence,
+} from "@/features/devices/liveStatus";
 import { useNavigate, useParams } from "react-router-dom";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
@@ -40,6 +44,7 @@ export default function DetailDeviceView() {
   } = useDeviceDetailQuery(deviceId);
 
   const errorMessage = isError ? "Failed to load device." : null;
+  const presence = device ? resolvePresence(device) : "offline";
 
   const handleCopyToken = async () => {
     if (!device?.deviceToken) return;
@@ -117,15 +122,26 @@ export default function DetailDeviceView() {
                   Device ID: {device.deviceId}
                 </Typography>
               </Box>
-              <Chip
-                size="medium"
-                label={
-                  (device.deviceStatus ?? "offline").charAt(0).toUpperCase() +
-                  (device.deviceStatus ?? "offline").slice(1).toLowerCase()
-                }
-                color={getStatusColor(device.deviceStatus)}
-                variant="outlined"
-              />
+              <Stack direction="row" spacing={1}>
+                {device.deviceType === "actuator" ? (
+                  <Chip
+                    size="medium"
+                    label={formatReportedState(device.liveStatus)}
+                    color={
+                      device.liveStatus?.reportedState === "on"
+                        ? "primary"
+                        : "default"
+                    }
+                    variant="outlined"
+                  />
+                ) : null}
+                <Chip
+                  size="medium"
+                  label={presence.charAt(0).toUpperCase() + presence.slice(1)}
+                  color={getStatusColor(presence)}
+                  variant="outlined"
+                />
+              </Stack>
             </Stack>
 
             <Divider sx={{ my: 2 }} />

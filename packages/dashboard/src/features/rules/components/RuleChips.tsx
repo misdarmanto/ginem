@@ -116,7 +116,10 @@ export function ExecutionActionChips({
             size="small"
             label={formatExecutionAction(action)}
             color={
-              action.skipped ? "warning" : getRuleActionChipColor(action.state)
+              action.skipped ||
+              (action.confirmation && action.confirmation !== "confirmed")
+                ? "warning"
+                : getRuleActionChipColor(action.state)
             }
             variant="outlined"
           />

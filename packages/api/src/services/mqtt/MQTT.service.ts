@@ -111,6 +111,10 @@ export class MQTTService {
     return MQTTService.lastStateByDevice.get(deviceId) ?? null
   }
 
+  static getLastDeviceTelemetry(deviceId: number): LastDeviceTelemetryRecord | null {
+    return MQTTService.lastTelemetryByDevice.get(deviceId) ?? null
+  }
+
   private static recordDeviceState(deviceId: number, payload: unknown): void {
     MQTTService.lastStateByDevice.set(deviceId, {
       deviceId,

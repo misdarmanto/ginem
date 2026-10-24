@@ -63,6 +63,8 @@ export interface IRuleExecutionAction {
   state?: string | null;
   skipped?: boolean | null;
   published?: boolean | null;
+  confirmation?: "confirmed" | "mismatch" | "unconfirmed" | null;
+  attempts?: number | null;
   reason?: string | null;
   deviceLogId?: number | null;
   deviceLogData?: string | null;
@@ -169,6 +171,8 @@ export function formatExecutionAction(action: IRuleExecutionAction): string {
   const state = action.state?.trim();
   const base = state ? `${device} → ${state.toUpperCase()}` : device;
   if (action.skipped) return `${base} · skipped`;
+  if (action.confirmation === "confirmed") return `${base} · confirmed`;
+  if (action.confirmation) return `${base} · not confirmed`;
   if (action.published) return `${base} · published`;
   return base;
 }

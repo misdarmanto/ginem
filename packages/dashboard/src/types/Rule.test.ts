@@ -124,4 +124,13 @@ describe("rule display helpers", () => {
       formatExecutionAction(log.actionResult?.actions?.[0] ?? {}),
     ).toBe("Device 6 → ON · skipped");
   });
+
+  it("shows whether the device confirmed the command", () => {
+    expect(
+      formatExecutionAction({ deviceId: 6, state: "on", confirmation: "confirmed" }),
+    ).toBe("Device 6 → ON · confirmed");
+    expect(
+      formatExecutionAction({ deviceId: 6, state: "on", confirmation: "unconfirmed" }),
+    ).toBe("Device 6 → ON · not confirmed");
+  });
 });

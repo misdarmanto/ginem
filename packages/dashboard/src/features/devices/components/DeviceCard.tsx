@@ -15,6 +15,11 @@ import ReactApexChart from "react-apexcharts";
 import type { ApexOptions } from "apexcharts";
 import moment from "moment";
 import { useTranslation } from "react-i18next";
+import {
+  formatReportedState,
+  resolvePresence,
+  type DeviceLiveStatus,
+} from "../liveStatus";
 
 export interface DeviceLogItem {
   deviceLogId: number;
@@ -28,6 +33,7 @@ export interface DeviceCardItem {
   deviceName?: string | null;
   deviceType?: string | null;
   deviceStatus?: string | null;
+  liveStatus?: DeviceLiveStatus | null;
   deviceFirmwareVersion?: string | null;
   deviceMetadata?: Record<string, string> | null;
   deviceLogs?: DeviceLogItem[];
@@ -56,7 +62,7 @@ export default function DeviceCard({
 }: DeviceCardProps) {
   const theme = useTheme();
   const { t } = useTranslation();
-  const status = String(device?.deviceStatus ?? "online");
+  const status = resolvePresence(device);
   const statusColor = getStatusColor(status);
   const isOnline = statusColor === "success";
 
@@ -281,6 +287,18 @@ export default function DeviceCard({
                     sx={{ mt: 0.25 }}
                   >
                     {device.deviceType}
+                  </Typography>
+                ) : null}
+                {isActuator ? (
+                  <Typography
+                    variant="caption"
+                    color={
+                      device.liveStatus?.reportedState
+                        ? "text.primary"
+                        : "text.disabled"
+                    }
+                  >
+                    {formatReportedState(device.liveStatus)}
                   </Typography>
                 ) : null}
               </Box>

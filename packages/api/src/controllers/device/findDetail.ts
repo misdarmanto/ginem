@@ -3,7 +3,7 @@ import { StatusCodes } from 'http-status-codes'
 import { ResponseData } from '../../utilities/response'
 
 import { type IAuthenticatedRequest } from '../../interfaces/shared/request.interface'
-import { DeviceService } from '../../services/device'
+import { DeviceLiveStatusService, DeviceService } from '../../services/device'
 import { handleError } from '../../utilities/requestHandler'
 import { type IFindDetailDevice } from '../../schemas/DeviceSchema'
 
@@ -15,7 +15,9 @@ export const findDetailDevice = async (
     const payload = req.params as unknown as IFindDetailDevice
     const result = await DeviceService.findById(payload.deviceId)
 
-    return res.status(StatusCodes.OK).json(ResponseData.success({ data: result }))
+    return res
+      .status(StatusCodes.OK)
+      .json(ResponseData.success({ data: DeviceLiveStatusService.attach(result) }))
   } catch (serverError) {
     return handleError(res, serverError)
   }

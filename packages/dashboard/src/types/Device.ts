@@ -1,4 +1,5 @@
 import { IRoot } from "./Root";
+import type { DeviceLiveStatus } from "@/features/devices/liveStatus";
 
 export interface IDevice extends IRoot {
   deviceId: number;
@@ -7,6 +8,7 @@ export interface IDevice extends IRoot {
   deviceDescription?: string;
   deviceType: "sensor" | "actuator";
   deviceStatus: "online" | "offline";
+  liveStatus?: DeviceLiveStatus;
   deviceFirmwareVersion?: string;
   deviceMetadata?: object;
   deviceValues?: IDeviceValue[];
