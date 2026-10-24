@@ -27,13 +27,13 @@ jest.mock('../../device', () => ({
   }
 }))
 
-jest.mock('../../mqtt/MQTT.service', () => ({
-  MQTTService: {
-    publishActuatorState: jest.fn()
+jest.mock('../../mqtt/ActuatorCommand.service', () => ({
+  ActuatorCommandService: {
+    sendWithRetry: jest.fn().mockResolvedValue({ confirmation: 'confirmed', attempts: 1 })
   }
 }))
 
-const { MQTTService } = jest.requireMock('../../mqtt/MQTT.service')
+const { ActuatorCommandService } = jest.requireMock('../../mqtt/ActuatorCommand.service')
 const { DeviceLogService } = jest.requireMock('../../device')
 const { DeviceLogModel } = jest.requireMock('../../../models/DeviceLogModel')
 const { RuleExecutionLogModel } = jest.requireMock(
@@ -159,7 +159,7 @@ describe('RuleEngine.evaluate', () => {
       deviceLogDeviceId: 20,
       deviceLogData: '1'
     })
-    expect(MQTTService.publishActuatorState).toHaveBeenCalledWith(20, 'on')
+    expect(ActuatorCommandService.sendWithRetry).toHaveBeenCalledWith(20, 'on')
     expect(RuleExecutionLogModel.create).toHaveBeenCalledWith(
       expect.objectContaining({ ruleId: 1, success: true })
     )
@@ -177,7 +177,7 @@ describe('RuleEngine.evaluate', () => {
       receivedAt: new Date()
     })
 
-    expect(MQTTService.publishActuatorState).toHaveBeenCalledWith(20, 'on')
+    expect(ActuatorCommandService.sendWithRetry).toHaveBeenCalledWith(20, 'on')
     expect(RuleExecutionLogModel.create).toHaveBeenCalledWith(
       expect.objectContaining({
         actionResult: {
@@ -197,7 +197,7 @@ describe('RuleEngine.evaluate', () => {
     })
 
     expect(DeviceLogService.create).not.toHaveBeenCalled()
-    expect(MQTTService.publishActuatorState).not.toHaveBeenCalled()
+    expect(ActuatorCommandService.sendWithRetry).not.toHaveBeenCalled()
     expect(RuleExecutionLogModel.create).not.toHaveBeenCalled()
   })
 
@@ -214,7 +214,7 @@ describe('RuleEngine.evaluate', () => {
       deviceLogDeviceId: 20,
       deviceLogData: '1'
     })
-    expect(MQTTService.publishActuatorState).toHaveBeenCalledWith(20, 'on')
+    expect(ActuatorCommandService.sendWithRetry).toHaveBeenCalledWith(20, 'on')
   })
 
   it('skips when in cooldown', async () => {
@@ -232,7 +232,7 @@ describe('RuleEngine.evaluate', () => {
     })
 
     expect(DeviceLogService.create).not.toHaveBeenCalled()
-    expect(MQTTService.publishActuatorState).not.toHaveBeenCalled()
+    expect(ActuatorCommandService.sendWithRetry).not.toHaveBeenCalled()
   })
 
   it('fires only once when concurrent events arrive for the same rule', async () => {
@@ -241,8 +241,34 @@ describe('RuleEngine.evaluate', () => {
 
     await Promise.all([RuleEngine.evaluate(event), RuleEngine.evaluate(event)])
 
-    expect(MQTTService.publishActuatorState).toHaveBeenCalledTimes(1)
+    expect(ActuatorCommandService.sendWithRetry).toHaveBeenCalledTimes(1)
     expect(DeviceLogService.create).toHaveBeenCalledTimes(1)
+  })
+
+  it('records the confirmation and fails the log when the device does not confirm', async () => {
+    ActuatorCommandService.sendWithRetry.mockResolvedValueOnce({
+      confirmation: 'unconfirmed',
+      attempts: 2
+    })
+    RuleCache.setRules([sampleRule()])
+
+    await RuleEngine.evaluate({
+      deviceId: 10,
+      metrics: { temperature: 36 },
+      receivedAt: new Date()
+    })
+
+    expect(RuleExecutionLogModel.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        success: false,
+        errorMessage: 'Device did not confirm the command: device 20 (unconfirmed)',
+        actionResult: {
+          actions: [
+            expect.objectContaining({ confirmation: 'unconfirmed', attempts: 2 })
+          ]
+        }
+      })
+    )
   })
 
   it('keeps the cooldown claimed when an action fails', async () => {

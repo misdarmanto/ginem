@@ -2,7 +2,7 @@ import { DeviceLogModel } from '../../models/DeviceLogModel'
 import { RuleModel } from '../../models/RuleModel'
 import { RuleExecutionLogModel } from '../../models/RuleExecutionLogModel'
 import { DeviceLogService } from '../device'
-import { MQTTService } from '../mqtt/MQTT.service'
+import { ActuatorCommandService } from '../mqtt/ActuatorCommand.service'
 import logger from '../../utilities/logger'
 import {
   RuleCache,
@@ -50,29 +50,36 @@ export class RuleEngine {
     const candidates = RuleCache.findByTriggerDevice(event.deviceId)
     if (candidates.length === 0) return
 
-    for (const rule of candidates) {
+    // Rules run in parallel: waiting for one device to confirm must not delay the others.
+    await Promise.all(
+      candidates.map((rule) => RuleEngine.evaluateGuarded(rule, event, started))
+    )
+  }
+
+  private static async evaluateGuarded(
+    rule: CachedRule,
+    event: SensorEvent,
+    started: number
+  ): Promise<void> {
+    try {
+      await RuleEngine.evaluateOne(rule, event, started)
+    } catch (error) {
+      logger.error(`[RuleEngine] ruleId=${rule.ruleId} evaluation failed: ${String(error)}`)
       try {
-        await RuleEngine.evaluateOne(rule, event, started)
-      } catch (error) {
-        logger.error(
-          `[RuleEngine] ruleId=${rule.ruleId} evaluation failed: ${String(error)}`
-        )
-        try {
-          await RuleExecutionLogModel.create({
-            ruleId: rule.ruleId,
-            eventSnapshot: {
-              deviceId: event.deviceId,
-              metrics: event.metrics,
-              receivedAt: event.receivedAt.toISOString()
-            },
-            success: false,
-            errorMessage: String(error),
-            latencyMs: Date.now() - started,
-            deleted: false
-          })
-        } catch (logError) {
-          logger.error(`[RuleEngine] failed to write execution log: ${String(logError)}`)
-        }
+        await RuleExecutionLogModel.create({
+          ruleId: rule.ruleId,
+          eventSnapshot: {
+            deviceId: event.deviceId,
+            metrics: event.metrics,
+            receivedAt: event.receivedAt.toISOString()
+          },
+          success: false,
+          errorMessage: String(error),
+          latencyMs: Date.now() - started,
+          deleted: false
+        })
+      } catch (logError) {
+        logger.error(`[RuleEngine] failed to write execution log: ${String(logError)}`)
       }
     }
   }
@@ -145,11 +152,16 @@ export class RuleEngine {
         deviceLogData
       })
 
-      MQTTService.publishActuatorState(action.deviceId, action.state)
+      const { confirmation, attempts } = await ActuatorCommandService.sendWithRetry(
+        action.deviceId,
+        action.state
+      )
       actionResults.push({
         deviceId: action.deviceId,
         state: action.state,
         published: true,
+        confirmation,
+        attempts,
         deviceLogId: deviceLog.deviceLogId,
         deviceLogData: deviceLog.deviceLogData
       })
@@ -161,6 +173,10 @@ export class RuleEngine {
       { where: { ruleId: rule.ruleId } }
     )
     RuleCache.touchLastTriggered(rule.ruleId, firedAt)
+
+    const unconfirmed = actionResults
+      .filter((result) => result.confirmation !== 'confirmed')
+      .map((result) => `device ${String(result.deviceId)} (${String(result.confirmation)})`)
 
     await RuleExecutionLogModel.create({
       ruleId: rule.ruleId,
@@ -176,8 +192,11 @@ export class RuleEngine {
         passed: true
       },
       actionResult: { actions: actionResults },
-      success: true,
-      errorMessage: null,
+      success: unconfirmed.length === 0,
+      errorMessage:
+        unconfirmed.length === 0
+          ? null
+          : `Device did not confirm the command: ${unconfirmed.join(', ')}`,
       latencyMs: Date.now() - started,
       deleted: false
     })

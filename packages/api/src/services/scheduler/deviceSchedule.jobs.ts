@@ -4,6 +4,7 @@ import { SchedulerLogModel, type SchedulerCategory } from '../../models/Schedule
 import logger from '../../utilities/logger'
 import { DeviceLogService } from '../device'
 import { MQTTService } from '../mqtt/MQTT.service'
+import { ActuatorCommandService } from '../mqtt/ActuatorCommand.service'
 import { AppError } from '../../utilities/AppError'
 import { removeRepeatDeviceScheduleJob, type DeviceScheduleJobData } from './deviceSchedule.queue'
 
@@ -82,13 +83,18 @@ export async function executeActuatorJob(data: DeviceScheduleJobData): Promise<v
       deviceLogData: value
     })
 
-    MQTTService.publishActuatorState(device.deviceId, state)
+    const { confirmation, attempts } = await ActuatorCommandService.sendWithRetry(
+      device.deviceId,
+      state
+    )
 
     const result = {
-      success: true,
+      success: confirmation === 'confirmed',
       category,
       message:
         state === 'on' ? 'Device turned on (value 1)' : 'Device turned off (value 0)',
+      confirmation,
+      attempts,
       deviceName,
       deviceId: device.deviceId,
       deviceLogId: deviceValue.deviceLogId,
@@ -99,6 +105,13 @@ export async function executeActuatorJob(data: DeviceScheduleJobData): Promise<v
         value,
         brokerConnected: MQTTService.isConnected()
       }
+    }
+
+    if (confirmation !== 'confirmed') {
+      const error = `Device "${deviceName}" did not confirm the command (${confirmation}) after ${attempts} attempts`
+      await recordSchedulerResult(jobId, 'failed', category, result, error)
+      logger.warn(`[DeviceScheduleJobs] Actuator job ${jobId}: ${error}`)
+      return
     }
 
     await recordSchedulerResult(jobId, 'completed', category, result)

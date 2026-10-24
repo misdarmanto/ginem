@@ -446,8 +446,15 @@ export class ChatService {
 
       let error: string | undefined
       try {
-        const parsed = JSON.parse(output) as { error?: unknown }
+        const parsed = JSON.parse(output) as {
+          error?: unknown
+          success?: unknown
+          message?: unknown
+        }
         if (typeof parsed?.error === 'string' && parsed.error !== '') error = parsed.error
+        else if (parsed?.success === false) {
+          error = typeof parsed.message === 'string' ? parsed.message : 'Tool reported failure'
+        }
       } catch {
         // plain-text output: not a structured error
       }

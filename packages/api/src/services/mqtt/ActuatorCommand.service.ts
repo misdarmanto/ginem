@@ -1,6 +1,7 @@
 import { MQTTService } from './MQTT.service'
+import { parseReportedState, type ActuatorState } from './reportedState'
 
-export type ActuatorState = 'on' | 'off'
+export type { ActuatorState }
 
 /**
  * - confirmed: the device reported the requested state after the command.
@@ -10,24 +11,29 @@ export type ActuatorState = 'on' | 'off'
 export type ActuatorConfirmation = 'confirmed' | 'mismatch' | 'unconfirmed'
 
 export const ACTUATOR_CONFIRM_TIMEOUT_MS = 5000
+export const ACTUATOR_MAX_ATTEMPTS = 2
 
-const REPORTED_STATES: Record<string, ActuatorState> = {
-  on: 'on',
-  '1': 'on',
-  off: 'off',
-  '0': 'off'
-}
-
-function parseReportedState(payload: unknown): ActuatorState | null {
-  const raw =
-    payload != null && typeof payload === 'object'
-      ? (payload as { state?: unknown }).state
-      : payload
-  if (typeof raw !== 'string' && typeof raw !== 'number') return null
-  return REPORTED_STATES[String(raw).trim().toLowerCase()] ?? null
+export interface ConfirmedCommandResult {
+  confirmation: ActuatorConfirmation
+  attempts: number
 }
 
 export class ActuatorCommandService {
+  /** Resends the command until the device confirms it or the attempts run out. */
+  static async sendWithRetry(
+    deviceId: number,
+    state: ActuatorState,
+    maxAttempts: number = ACTUATOR_MAX_ATTEMPTS
+  ): Promise<ConfirmedCommandResult> {
+    let confirmation: ActuatorConfirmation = 'unconfirmed'
+    let attempts = 0
+    while (attempts < maxAttempts && confirmation !== 'confirmed') {
+      attempts += 1
+      confirmation = await ActuatorCommandService.sendAndConfirm(deviceId, state)
+    }
+    return { confirmation, attempts }
+  }
+
   /**
    * Publishes the command, then waits for the device to report its state on
    * `iot/v1/device/{id}/state`. Only reports received after the publish count, so a

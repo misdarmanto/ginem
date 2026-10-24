@@ -49,7 +49,8 @@ describe('mqtt publisher', () => {
 
       expect(mqttClient.publish).toHaveBeenCalledWith(
         'iot/v1/device/5/command',
-        JSON.stringify({ value: '1' })
+        JSON.stringify({ value: '1' }),
+        { qos: 1 }
       )
     })
 

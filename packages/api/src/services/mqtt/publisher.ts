@@ -14,11 +14,15 @@ export function toMqttValueEnvelope (payload: unknown): { value: string } {
   return { value: String(payload) }
 }
 
+/** At-least-once delivery, so a brief connection drop does not lose an actuator command. */
+const COMMAND_QOS = 1
+
 export function publishDeviceCommand (deviceId: number, command: string): void {
   try {
     mqttClient.publish(
       deviceCommandTopic(deviceId),
-      JSON.stringify(toMqttValueEnvelope(command))
+      JSON.stringify(toMqttValueEnvelope(command)),
+      { qos: COMMAND_QOS }
     )
   } catch (error) {
     logger.error(`Failed to publish command to ${deviceId}`, error)

@@ -400,6 +400,17 @@ describe('ChatService', () => {
       })
     })
 
+    it('reports an unconfirmed actuator command as not ok', () => {
+      const [result] = ChatService.extractToolResults([
+        toolMessage(
+          'set_actuator_state_by_device_name',
+          '{"success":false,"confirmation":"unconfirmed","message":"Device did not confirm."}'
+        )
+      ])
+
+      expect(result).toMatchObject({ ok: false, error: 'Device did not confirm.' })
+    })
+
     it('reports a normal result as ok', () => {
       const [result] = ChatService.extractToolResults([
         toolMessage('list_devices', '{"items":[]}')
