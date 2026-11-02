@@ -1,0 +1,561 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "list_devices",
+      "description": "List devices from the database with pagination. Use this when the user asks for device list, all devices, or paginated devices.",
+      "parameters": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "page": {
+            "description": "Zero-based page index",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "size": {
+            "description": "Page size (default 10)",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "get_device_by_id",
+      "description": "Get a single device by its numeric deviceId. Use this when the user asks for one device or details of a specific device.",
+      "parameters": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "deviceId": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991,
+            "description": "The device ID"
+          }
+        },
+        "required": [
+          "deviceId"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "get_last_log_by_device_name",
+      "description": "Get the latest (most recent) single log for a device by its name. Use when the user asks for the last log, current log, or latest reading of a device by name.",
+      "parameters": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "deviceName": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The exact device name (from Device table)"
+          }
+        },
+        "required": [
+          "deviceName"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "get_last_10_logs_by_device_name",
+      "description": "Get the last 10 logs (most recent first) for a device by its name. Use when the user asks for last 10 logs, recent readings, or history of logs for a device by name.",
+      "parameters": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "deviceName": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The exact device name (from Device table)"
+          }
+        },
+        "required": [
+          "deviceName"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "create_device_log",
+      "description": "Create a new device log for a device. Use the device name (deviceName) to identify the device, not deviceId. Use when the user wants to add a value, record a reading, or create a device log for a device by name. Do NOT use for turn on/off (hidupkan/matikan) — use set_actuator_state_by_device_name instead.",
+      "parameters": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "deviceName": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The exact device name (identifies which device to add the value to)"
+          },
+          "deviceLogData": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The data to store for this device log"
+          }
+        },
+        "required": [
+          "deviceName",
+          "deviceLogData"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "set_actuator_state_by_device_name",
+      "description": "Turn ON or OFF an actuator device immediately by its name. Use for instant control without scheduling.",
+      "parameters": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "deviceName": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The exact device name (must be an actuator)"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "on",
+              "off"
+            ],
+            "description": "on = hidupkan, off = matikan"
+          }
+        },
+        "required": [
+          "deviceName",
+          "state"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "schedule_actuator_state_at",
+      "description": "Schedule actuator ON/OFF with category once or repeat (WIB). ONCE examples: \"hidupkan lampu depan di jam 18:00 WIB\" → category=once, hour=18, minute=0 (no date). \"hidupkan lampu depan di 20-06-2026 jam 18:00\" → category=once, date=\"20-06-2026\", hour=18, minute=0. REPEAT examples: \"hidupkan lampu depan setiap hari jam 18:00 WIB\" → category=repeat, hour=18, minute=0. \"matikan lampu depan setiap jam 06:00\" → category=repeat, hour=6, minute=0. User may request TWO separate jobs for daily on and daily off.",
+      "parameters": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "deviceName": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The exact device name (must be an actuator)"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "on",
+              "off"
+            ],
+            "description": "on = hidupkan, off = matikan"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "once",
+              "repeat"
+            ],
+            "description": "once = run ONE time only (e.g. \"hidupkan lampu jam 18:00\" today, or \"20-06-2026 jam 18:00\"). repeat = EVERY DAY at hour:minute WIB (e.g. \"setiap hari jam 18:00\", \"setiap jam 06:00 matikan\")."
+          },
+          "hour": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 23,
+            "description": "Hour 0–23 (24h, WIB). Required. e.g. \"jam 10:11\" → hour=10"
+          },
+          "minute": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 59,
+            "description": "Minute 0–59. Required. e.g. \"jam 10:11\" → minute=11"
+          },
+          "date": {
+            "description": "For category=once only. Specific date DD-MM-YYYY (e.g. \"20-06-2026\") or YYYY-MM-DD. Omit for time-only (defaults to today WIB).",
+            "type": "string"
+          },
+          "year": {
+            "type": "integer",
+            "minimum": 2024,
+            "maximum": 2100
+          },
+          "month": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 12
+          },
+          "day": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 31
+          }
+        },
+        "required": [
+          "deviceName",
+          "state",
+          "category",
+          "hour",
+          "minute"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "schedule_sensor_data_at",
+      "description": "Schedule sensor data fetch with category once or repeat (WIB). ONCE: specific time or date+time. REPEAT: every day at hour:minute (omit date).",
+      "parameters": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "deviceName": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The exact device name to fetch data from"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "once",
+              "repeat"
+            ],
+            "description": "once = run ONE time only (e.g. \"hidupkan lampu jam 18:00\" today, or \"20-06-2026 jam 18:00\"). repeat = EVERY DAY at hour:minute WIB (e.g. \"setiap hari jam 18:00\", \"setiap jam 06:00 matikan\")."
+          },
+          "hour": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 23,
+            "description": "Hour 0–23 (24h, WIB). Required. e.g. \"jam 10:11\" → hour=10"
+          },
+          "minute": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 59,
+            "description": "Minute 0–59. Required. e.g. \"jam 10:11\" → minute=11"
+          },
+          "date": {
+            "description": "For category=once only. Specific date DD-MM-YYYY (e.g. \"20-06-2026\") or YYYY-MM-DD. Omit for time-only (defaults to today WIB).",
+            "type": "string"
+          },
+          "year": {
+            "type": "integer",
+            "minimum": 2024,
+            "maximum": 2100
+          },
+          "month": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 12
+          },
+          "day": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 31
+          }
+        },
+        "required": [
+          "deviceName",
+          "category",
+          "hour",
+          "minute"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "get_scheduled_job_result",
+      "description": "Get status/result of a scheduled job. Repeat jobs stay status=active and result shows last execution.",
+      "parameters": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "jobId": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The job ID returned when the task was scheduled"
+          }
+        },
+        "required": [
+          "jobId"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "list_scheduled_jobs",
+      "description": "List recent scheduled jobs (once and repeat).",
+      "parameters": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "create_automation_rule",
+      "description": "Create an Event-Condition-Action automation rule from natural language intent. Use when the user wants automatic cooperation between devices (e.g. \"turn on fan if temperature > 25\"). Do NOT use for immediate on/off (use set_actuator_state_by_device_name) or time schedules (use schedule_*). Trigger device must be a sensor; action devices must be an actuator. Metric is a string like temperature or humidity.",
+      "parameters": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 150
+          },
+          "originalPrompt": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The user original natural-language request"
+          },
+          "conditionLogic": {
+            "default": "AND",
+            "type": "string",
+            "enum": [
+              "AND",
+              "OR"
+            ]
+          },
+          "cooldownSec": {
+            "default": 60,
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 86400
+          },
+          "isActive": {
+            "default": true,
+            "type": "boolean"
+          },
+          "trigger": {
+            "type": "object",
+            "properties": {
+              "deviceName": {
+                "type": "string",
+                "minLength": 1
+              },
+              "metric": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              }
+            },
+            "required": [
+              "deviceName",
+              "metric"
+            ],
+            "additionalProperties": false
+          },
+          "conditions": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "deviceName": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "metric": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "operator": {
+                  "type": "string",
+                  "enum": [
+                    ">",
+                    ">=",
+                    "<",
+                    "<=",
+                    "==",
+                    "!="
+                  ]
+                },
+                "threshold": {
+                  "type": "number"
+                },
+                "unit": {
+                  "type": "string",
+                  "maxLength": 32
+                }
+              },
+              "required": [
+                "metric",
+                "operator",
+                "threshold"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "actions": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "deviceName": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "state": {
+                  "type": "string",
+                  "enum": [
+                    "on",
+                    "off"
+                  ]
+                }
+              },
+              "required": [
+                "deviceName",
+                "state"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "originalPrompt",
+          "conditionLogic",
+          "cooldownSec",
+          "isActive",
+          "trigger",
+          "conditions",
+          "actions"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "list_automation_rules",
+      "description": "List stored automation (ECA) rules.",
+      "parameters": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "isActive": {
+            "type": "boolean"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "get_automation_rule",
+      "description": "Get one automation rule by ruleId.",
+      "parameters": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "ruleId": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "ruleId"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "set_automation_rule_active",
+      "description": "Enable or disable an automation rule by ruleId.",
+      "parameters": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "ruleId": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ruleId",
+          "isActive"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "delete_automation_rule",
+      "description": "Delete an automation rule by ruleId.",
+      "parameters": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "ruleId": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "ruleId"
+        ],
+        "additionalProperties": false
+      }
+    }
+  }
+]
